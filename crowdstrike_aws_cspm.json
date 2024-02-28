@@ -1,0 +1,492 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Setup script to enable CrowdStrike Falcon CSPM.",
+    "Parameters": {
+      "RoleName": {
+        "Description": "Read-only role for CrowdStrike Falcon CSPM",
+        "Type": "String",
+        "MinLength": "1"
+      },
+      "ExternalID": {
+        "Description": "External ID for created role",
+        "Type": "String",
+        "MinLength": "2"
+      },
+      "CSRoleName": {
+        "Description": "Name of Crowdstrike assuming role",
+        "Type": "String",
+        "MinLength": "10"
+      },
+      "CSAccountNumber": {
+        "Description": "Crowdstrike account number",
+        "Type": "String",
+        "MinLength": "12",
+        "MaxLength": "12"
+      },
+      "EnableIOA": {
+        "Type": "String",
+        "AllowedValues": [
+          "true",
+          "false"
+        ],
+        "Default": "true"
+      },
+      "UseExistingCloudtrail": {
+        "Description": "When set to false, a CloudTrail resource is created which allows Horizon to consume non-mutating API events",
+        "Type": "String",
+        "AllowedValues": [
+          "true",
+          "false"
+        ],
+        "Default": "true"
+      },
+      "CSBucketName": {
+        "Type": "String",
+        "Default": "none"
+      },
+      "EnableSensorManagement": {
+        "Type": "String",
+        "AllowedValues": [
+          "true",
+          "false"
+        ],
+        "Default": "false"
+      },
+      "ClientID": {
+        "Type": "String",
+        "Description": "Falcon Client ID",
+        "MinLength": "1",
+        "NoEcho": "true"
+      },
+      "ClientSecret": {
+        "Type": "String",
+        "Description": "Falcon Client Secret",
+        "MinLength": "1",
+        "NoEcho": "true"
+      },
+      "PermissionsBoundary": {
+        "Type": "String",
+        "Description": "The name of the policy used to set the permissions boundary for IAM roles",
+        "Default": ""
+      },
+      "APICredentialsStorageMode": {
+        "Type": "String",
+        "Description": "How Falcon API credentials are stored. 'lambda' stores them in the lambda environment variables, 'secret' in an AWS secret.",
+        "Default": "secret",
+        "AllowedValues": ["lambda", "secret"]
+      }
+    },
+    "Conditions": {
+      "ShouldCreateIOAResources": {
+        "Fn::Equals": [
+          true,
+          {
+            "Ref": "EnableIOA"
+          }
+        ]
+      },
+      "ShouldCreateIOACloudTrailResource": {
+        "Fn::And": [
+          {
+            "Condition": "ShouldCreateIOAResources"
+          },
+          {
+            "Fn::Equals": [
+              false,
+              {
+                "Ref": "UseExistingCloudtrail"
+              }
+            ]
+          }
+        ]
+      },
+      "ShouldCreateSensorManagementResources": {
+        "Fn::Equals": [
+          true,
+          {
+            "Ref": "EnableSensorManagement"
+          }
+        ]
+      },
+      "SetPermissionsBoundary": {
+        "Fn::Not": [{
+          "Fn::Equals" : [ {"Ref": "PermissionsBoundary"}, "" ]
+        }]
+      },
+      "APICredentialsInSecretEnabled" : {
+        "Fn::Equals": [
+          {"Ref": "APICredentialsStorageMode"},
+          "secret"
+        ]
+      },
+      "APICredentialsInLambdaEnabled" : {
+        "Fn::Equals": [
+          {"Ref": "APICredentialsStorageMode"},
+          "lambda"
+        ]
+      },
+      "ShouldCreateSensorManagementCredentialsSecret": {
+        "Fn::And": [
+          {"Condition": "ShouldCreateSensorManagementResources"},
+          {"Condition": "APICredentialsInSecretEnabled"}
+        ]
+      }
+    },
+    "Resources": {
+      "CrowdStrikeCSPMRole": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "PermissionsBoundary": { 
+            "Fn::If": [ 
+              "SetPermissionsBoundary", 
+              {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"}, 
+              {"Ref": "AWS::NoValue"}
+            ]
+          },
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:iam::",
+                        {
+                          "Ref": "CSAccountNumber"
+                        },
+                        ":role/",
+                        {
+                          "Ref": "CSRoleName"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                "Condition": {
+                  "StringEquals": {
+                    "sts:ExternalId": {
+                      "Ref": "ExternalID"
+                    }
+                  }
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ]
+              }
+            ]
+          },
+          "RoleName": {
+            "Ref": "RoleName"
+          },
+          "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/SecurityAudit"
+          ],
+          "Policies": [
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Resource": "*",
+                    "Action": [
+                      "ecr:BatchGetImage",
+                      "ecr:GetDownloadUrlForLayer",
+                      "lambda:GetLayerVersion",
+                      "backup:ListBackupPlans",
+                      "backup:ListRecoveryPointsByBackupVault",
+                      "ecr:GetRegistryScanningConfiguration",
+                      "eks:ListFargateProfiles",
+                      "eks:Describe*",
+                      "elasticfilesystem:DescribeAccessPoints",
+                      "lambda:GetFunction",
+                      "sns:GetSubscriptionAttributes"
+                    ]
+                  }
+                ]
+              },
+              "PolicyName": "cspm_config"
+            }
+          ]
+        }
+      },
+      "CrowdStrikeEventBridgeRole": {
+        "Type": "AWS::IAM::Role",
+        "Condition": "ShouldCreateIOAResources",
+        "Properties": {
+          "PermissionsBoundary": { 
+            "Fn::If": [ 
+              "SetPermissionsBoundary", 
+              {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"}, 
+              {"Ref": "AWS::NoValue"}
+            ]
+          },
+          "RoleName": "CrowdStrikeCSPMEventBridge",
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                  "Service": "events.amazonaws.com"
+                },
+                "Effect": "Allow",
+                "Sid": ""
+              }
+            ]
+          },
+          "Policies": [
+            {
+              "PolicyName": "eventbridge-put-events",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "events:PutEvents"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:events:*:*:event-bus/cs-*"
+                    },
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "CrowdStrikeCloudTrail": {
+        "Type": "AWS::CloudTrail::Trail",
+        "Condition": "ShouldCreateIOACloudTrailResource",
+        "Properties": {
+          "TrailName": "crowdstrike-cloudtrail",
+          "S3BucketName": {
+            "Ref": "CSBucketName"
+          },
+          "IncludeGlobalServiceEvents": true,
+          "IsLogging": true,
+          "IsMultiRegionTrail": true
+        }
+      },
+      "CrowdStrikeSensorManagementRole": {
+        "Type": "AWS::IAM::Role",
+        "Condition": "ShouldCreateSensorManagementResources",
+        "Properties": {
+          "PermissionsBoundary": { 
+              "Fn::If": [ 
+                "SetPermissionsBoundary", 
+                {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"}, 
+                {"Ref": "AWS::NoValue"}
+              ]
+          },
+          "RoleName": "CrowdStrikeSensorManagement",
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": {
+                    "Fn::Sub": "arn:aws:iam::${CSAccountNumber}:role/${CSRoleName}"
+                  }
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "sts:ExternalId": {
+                      "Ref": "ExternalID"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "Policies": [
+            {
+              "PolicyName": "sensor-management-invoke-orchestrator-lambda",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "lambda:InvokeFunction",
+                      "lambda:InvokeAsync"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:lambda:*:${AWS::AccountId}:function:cs-*"
+                    },
+                    "Effect": "Allow",
+                    "Sid": "InvokeLambda"
+                  },
+                  {
+                    "Action": [
+                      "ssm:GetDocument",
+                      "ssm:GetCommandInvocation",
+                      "ssm:ListCommands",
+                      "ssm:ListCommandInvocations"
+                    ],
+                    "Resource": "*",
+                    "Effect": "Allow"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "CrowdStrikeSensorManagementOrchestratorRole": {
+        "Type": "AWS::IAM::Role",
+        "Condition": "ShouldCreateSensorManagementResources",
+        "Properties": {
+          "PermissionsBoundary": { 
+            "Fn::If": [ 
+              "SetPermissionsBoundary", 
+              {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"}, 
+              {"Ref": "AWS::NoValue"}
+            ]
+          },
+          "RoleName": "CrowdStrikeSensorManagementOrchestrator",
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                },
+                "Effect": "Allow",
+                "Sid": ""
+              }
+            ]
+          },
+          "Policies": [
+            {
+              "PolicyName": "sensor-management-orchestrator-lambda-ssm-send-command",
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect":"Allow",
+                    "Action":[
+                      "ssm:SendCommand"
+                    ],
+                    "Resource":[
+                      "arn:aws:ssm:*:*:document/*",
+                      "arn:aws:ec2:*:*:instance/*"
+                    ]
+                  },
+                  {
+                    "Action": [
+                      "logs:PutLogEvents",
+                      "logs:CreateLogStream"
+                    ],
+                    "Resource": [
+                      "arn:aws:logs:*:*:log-group:/aws/lambda/cs-*",
+                      "arn:aws:logs:*:*:log-group:/aws/lambda/cs-*:log-stream:*"
+                    ],
+                    "Effect": "Allow",
+                    "Sid": "Logging"
+                  },
+                  {
+                    "Fn::If": [
+                      "APICredentialsInSecretEnabled",
+                      {
+                        "Sid": "GetFalconCredentials",
+                        "Action": [
+                          "secretsmanager:GetSecretValue"
+                        ],
+                        "Resource": [
+                          {"Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials-??????"}
+                        ],
+                        "Effect": "Allow"
+                      },
+                      {"Ref" : "AWS::NoValue"}
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "CrowdStrikeSensorManagementLogGroup": {
+        "Type": "AWS::Logs::LogGroup",
+        "Condition": "ShouldCreateSensorManagementResources",
+        "Properties": {
+          "LogGroupName": "/aws/lambda/cs-horizon-sensor-installation-orchestrator",
+          "RetentionInDays": 1
+        }
+      },
+      "CrowdStrikeSensorManagementFalconCredentialsSecret": {
+        "Type": "AWS::SecretsManager::Secret",
+        "Condition": "ShouldCreateSensorManagementCredentialsSecret",
+        "Properties": {
+          "Name": "/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials",
+          "Description": "Falcon API credentials. Used by the 1-Click sensor management orchestrator.",
+          "SecretString": {"Fn::Sub": "{\"ClientId\":\"${ClientID}\",\"ClientSecret\":\"${ClientSecret}\"}"}
+        }
+      },
+      "CrowdStrikeSensorManagementLambda": {
+        "Type": "AWS::Lambda::Function",
+        "Condition": "ShouldCreateSensorManagementResources",
+        "Properties": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "Code": {
+            "S3Bucket": {
+              "Fn::Sub": "cs-horizon-sensormgmt-lambda-${AWS::Region}"
+            },
+            "S3Key": "aws/horizon-sensor-installation-orchestrator.zip"
+          },
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "CS_CLIENT_ID": {
+                "Fn::If": [
+                  "APICredentialsInLambdaEnabled",
+                  {"Ref": "ClientID"},
+                  {"Ref": "AWS::NoValue"}
+                ]
+              },
+              "CS_CLIENT_SECRET": {
+                "Fn::If": [
+                  "APICredentialsInLambdaEnabled",
+                  {"Ref": "ClientSecret"},
+                  {"Ref": "AWS::NoValue"}
+                ]
+              },
+              "CS_API_CREDENTIALS_AWS_SECRET": {
+                "Fn::If": [
+                  "APICredentialsInSecretEnabled",
+                  "/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials",
+                  {"Ref": "AWS::NoValue"}
+                ]
+              },
+              "CS_MODE": "force_auth",
+              "CS_DEBUG_ENABLED": "true"
+            }
+          },
+          "FunctionName": "cs-horizon-sensor-installation-orchestrator",
+          "Handler": "bootstrap",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "Role": {
+            "Fn::GetAtt": [
+              "CrowdStrikeSensorManagementOrchestratorRole",
+              "Arn"
+            ]
+          },
+          "Runtime": "provided.al2",
+          "Timeout": 900
+        },
+        "DependsOn": "CrowdStrikeSensorManagementLogGroup"
+      }
+    }
+  }
