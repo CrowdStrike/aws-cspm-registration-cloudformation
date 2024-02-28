@@ -1,0 +1,1 @@
+# cloud-aws-registration-cloudformation
