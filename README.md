@@ -79,7 +79,7 @@ This repository provides CloudFormation templates to onboard AWS Organizations w
 
 ## Questions or concerns?
 
-If you encounter any issues or have questions about this repository, please open an [issue](https://github.com/CrowdStrike/AWS-Registration/issues/new/choose).
+If you encounter any issues or have questions about this repository, please open an [issue](https://github.com/CrowdStrike/cloud-aws-registration-cloudformation/issues/new/choose).
 
 ## Statement of Support
 
