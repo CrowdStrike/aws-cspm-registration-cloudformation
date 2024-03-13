@@ -26,6 +26,7 @@ useragent = ("%s/%s" % (name, VERSION))
 
 SECRET_STORE_NAME = os.environ['secret_name']
 SECRET_STORE_REGION = os.environ['secret_region']
+EXISTING_CLOUDTRAIL = eval(os.environ['existing_cloudtrail'])
 AWS_REGION = os.environ['aws_region']
 CS_CLOUD = os.environ['cs_cloud']
 AWS_ACCOUNT_TYPE = os.environ['aws_account_type']
@@ -111,15 +112,27 @@ def lambda_handler(event, context):
                                     )
             if event['RequestType'] in ['Create']:
                 logger.info('Event = {}'.format(event))
-                response = falcon.create_aws_account(account_id=aws_account_id,
-                                                    organization_id=OrgId,
-                                                    behavior_assessment_enabled=True,
-                                                    sensor_management_enabled=True,
-                                                    use_existing_cloudtrail=True,
-                                                    user_agent=useragent,
-                                                    is_master=True,
-                                                    account_type=AWS_ACCOUNT_TYPE
-                                                    )
+                if EXISTING_CLOUDTRAIL:
+                    response = falcon.create_aws_account(account_id=aws_account_id,
+                                                        organization_id=OrgId,
+                                                        behavior_assessment_enabled=True,
+                                                        sensor_management_enabled=True,
+                                                        use_existing_cloudtrail=EXISTING_CLOUDTRAIL,
+                                                        user_agent=useragent,
+                                                        is_master=True,
+                                                        account_type=AWS_ACCOUNT_TYPE
+                                                        )                    
+                else:
+                    response = falcon.create_aws_account(account_id=aws_account_id,
+                                                        organization_id=OrgId,
+                                                        behavior_assessment_enabled=True,
+                                                        sensor_management_enabled=True,
+                                                        use_existing_cloudtrail=EXISTING_CLOUDTRAIL,
+                                                        aws_cloudtrail_region=AWS_REGION,
+                                                        user_agent=useragent,
+                                                        is_master=True,
+                                                        account_type=AWS_ACCOUNT_TYPE
+                                                        )
                 logger.info('Response: {}'.format(response))
                 if response['status_code'] == 400:
                     error = response['body']['errors'][0]['message']
@@ -137,9 +150,11 @@ def lambda_handler(event, context):
                         "cs_role_name": response['body']['resources'][0]['intermediate_role_arn'].rsplit('/')[1],
                         "external_id": response['body']['resources'][0]['external_id']
                     }
+                    if not EXISTING_CLOUDTRAIL:
+                        response_d['cs_bucket_name'] = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
                     if FALCON_ACCOUNT_TYPE == "commercial":
                         response_d['eventbus_name'] = response['body']['resources'][0]['eventbus_name']
-                    elif FALCON_ACCOUNT_TYPE == "govcloud":
+                    elif FALCON_ACCOUNT_TYPE == "govcloud" and AWS_ACCOUNT_TYPE == "govcloud" :
                         response_d['eventbus_name'] = response['body']['resources'][0]['eventbus_name'].rsplit(',')[0]
                     cfnresponse_send(event, context, SUCCESS, response_d, "CustomResourcePhysicalID")
                 else:
