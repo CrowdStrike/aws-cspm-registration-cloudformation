@@ -120,6 +120,7 @@ def lambda_handler(event, context):
                                                     is_master=True,
                                                     account_type=AWS_ACCOUNT_TYPE
                                                     )
+                logger.info('Response: {}'.format(response))
                 if response['status_code'] == 400:
                     error = response['body']['errors'][0]['message']
                     logger.info('Account Registration Failed with reason....{}'.format(error))
