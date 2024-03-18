@@ -130,8 +130,8 @@ Parameters:
     Description: If you are provisioning the entire Organization, please enter the Root OU (eg. r-****). Otherwise provide a Comma Delimited List of OU(s) (eg. ou-****-****, ou-****-****)
     Default: ''
   Regions:
-    Description: Regions to deploy EventBridge Rules for IOA (eg. us-east-1, us-east-2)
-    Type: CommaDelimitedList
+    Description: Regions to deploy EventBridge Rules for IOA (list with no spaces eg. us-east-1,us-east-2)
+    Type: String
     Default: ''
   S3Bucket:
     Type: String
@@ -388,7 +388,7 @@ Resources:
             AccountFilterType: NONE
             Accounts:
               - !Ref AWS::AccountId
-          Regions: !Ref Regions
+          Regions: !GetAtt TriggerRegisterAccountLambda.regions_list
       TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_eb_v2.json
 
   GovCrowdStrikeRootEbStackSet:
@@ -413,9 +413,18 @@ Resources:
             AccountFilterType: NONE
             Accounts:
               - !Ref AWS::AccountId
-          Regions: !Ref Regions
+          Regions: !GetAtt TriggerRegisterAccountLambda.regions_list
       TemplateURL: https://cs-csgov-laggar-cloudconnect-templates.s3-us-gov-west-1.amazonaws.com/aws_cspm_cloudformation_eb_v2.json
 
+  CommGovCrowdStrikeRootIOAStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: IsCommToGovCloudIOA
+    Properties:
+      Parameters:
+        ClientID: !Ref FalconClientID
+        ClientSecret: !Ref FalconSecret
+      TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_gov_commercial_ioa_lambda_v2.json
+  
   CommGovCrowdStrikeRootEbStackSet:
     Type: 'AWS::CloudFormation::StackSet'
     Condition: IsCommToGovCloudIOA
@@ -427,10 +436,8 @@ Resources:
       ExecutionRoleName: !Ref StackSetExecutionRole
       StackSetName: "CrowdStrike-Cloud-Security-Root-EB-Stackset"
       Parameters:
-        - ParameterKey: ClientID
-          ParameterValue: !Ref FalconClientID
-        - ParameterKey: ClientSecret
-          ParameterValue: !Ref FalconSecret
+        - ParameterKey: DefaultEventBusRegion
+          ParameterValue: !Ref AWS::Region
       PermissionModel: SELF_MANAGED
       OperationPreferences:
         MaxConcurrentPercentage: 100
@@ -441,8 +448,8 @@ Resources:
             AccountFilterType: NONE
             Accounts:
               - !Ref AWS::AccountId
-          Regions: !Ref Regions
-      TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_gov_commercial_ioa_lambda_v2.json
+          Regions: !GetAtt TriggerRegisterAccountLambda.comm_gov_eb_regions
+      TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_eb_gov_comm_v2.json
 
   # Create EventBridge Rules to enable IOA in each Child Account via StackSet
   CommCrowdStrikeEbStackSet:
@@ -467,7 +474,7 @@ Resources:
         - DeploymentTargets:
             AccountFilterType: NONE
             OrganizationalUnitIds: !Ref ProvisionOU
-          Regions: !Ref Regions
+          Regions: !GetAtt TriggerRegisterAccountLambda.regions_list
       TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_eb_v2.json
 
   GovCrowdStrikeEbStackSet:
@@ -492,17 +499,17 @@ Resources:
         - DeploymentTargets:
             AccountFilterType: NONE
             OrganizationalUnitIds: !Ref ProvisionOU
-          Regions: !Ref Regions
+          Regions: !GetAtt TriggerRegisterAccountLambda.regions_list
       TemplateURL: https://cs-csgov-laggar-cloudconnect-templates.s3-us-gov-west-1.amazonaws.com/aws_cspm_cloudformation_eb_v2.json
 
-  CommGovCrowdStrikeEbStackSet:
+  CommGovCrowdStrikeIOAStackSet:
     Type: 'AWS::CloudFormation::StackSet'
     Condition: IsCommToGovCloudIOA
     Properties:
       Capabilities:
         - CAPABILITY_IAM
         - CAPABILITY_NAMED_IAM
-      StackSetName: "CrowdStrike-Cloud-Security-EB-Stackset"
+      StackSetName: "CrowdStrike-Cloud-Security-IOA-Stackset"
       Parameters:
         - ParameterKey: ClientID
           ParameterValue: !Ref FalconClientID
@@ -520,8 +527,35 @@ Resources:
         - DeploymentTargets:
             AccountFilterType: NONE
             OrganizationalUnitIds: !Ref ProvisionOU
-          Regions: !Ref Regions
+          Regions: 
+            - !Ref AWS::Region
       TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_gov_commercial_ioa_lambda_v2.json
+
+  CommGovCrowdStrikeEbStackSet:
+    Type: 'AWS::CloudFormation::StackSet'
+    Condition: IsCommToGovCloudIOA
+    Properties:
+      Capabilities:
+        - CAPABILITY_IAM
+        - CAPABILITY_NAMED_IAM
+      StackSetName: "CrowdStrike-Cloud-Security-EB-Stackset"
+      Parameters:
+        - ParameterKey: DefaultEventBusRegion
+          ParameterValue: !Ref AWS::Region
+      PermissionModel: SERVICE_MANAGED
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 50
+        RegionConcurrencyType: PARALLEL
+      AutoDeployment: 
+        Enabled: true
+        RetainStacksOnAccountRemoval: true
+      StackInstancesGroup:
+        - DeploymentTargets:
+            AccountFilterType: NONE
+            OrganizationalUnitIds: !Ref ProvisionOU
+          Regions: !GetAtt TriggerRegisterAccountLambda.comm_gov_eb_regions
+      TemplateURL: https://cs-prod-cloudconnect-templates.s3.amazonaws.com/aws_cspm_cloudformation_eb_gov_comm_v2.json
 
   # IAM Role for Lambda Function Execution
   LambdaCrowdStrikeRegistrationRole:
@@ -555,24 +589,9 @@ Resources:
                 Action:
                   - 'ec2:DescribeRegions'
                 Resource: '*'
-              - Action:
-                - events:DeleteRule
-                - events:PutTargets
-                - events:DescribeRule
-                - iam:PassRole
-                - events:EnableRule
-                - events:PutRule
-                - events:RemoveTargets
-                - events:DisableRule
-                Resource:
-                - !Sub arn:${AWS::Partition}:events:*:*:rule/cs-*
-                - !Sub arn:${AWS::Partition}:events:*:*:rule/*/cs-*
-                - !Sub arn:${AWS::Partition}:iam::*:role/CrowdStrike*
-                Effect: Allow
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess'
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess'
 
   # Lambda Function to Register Organization and Create IOA EventBridge Rules in Root Account
   RegisterAccountLambda:
@@ -593,6 +612,8 @@ Resources:
           cs_cloud: !Ref CSCloud
           enable_ioa: !Ref EnableIOA
           existing_cloudtrail: !Ref UseExistingCloudTrail
+          my_regions: !Ref Regions
+          current_region: !Ref AWS::Region
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"

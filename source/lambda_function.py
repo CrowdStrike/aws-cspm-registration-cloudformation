@@ -31,6 +31,8 @@ AWS_REGION = os.environ['aws_region']
 CS_CLOUD = os.environ['cs_cloud']
 AWS_ACCOUNT_TYPE = os.environ['aws_account_type']
 FALCON_ACCOUNT_TYPE = os.environ['falcon_account_type']
+AWS_REGION = os.environ['current_region']
+MY_REGIONS = os.environ['my_regions']
 
 def get_secret(secret_name, secret_region):
     session = boto3.session.Session()
@@ -68,6 +70,30 @@ def get_management_id():
     except Exception as e:
         logger.error('This stack runs only on the management of the AWS Organization')
         return False
+
+def process_regions(aws_region, my_regions):
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='ec2',
+        region_name=aws_region
+    )
+    active_regions = []
+    comm_gov_eb_regions = []
+    regions_list = []
+    try:
+        describe_regions_response = client.describe_regions(AllRegions=False)
+        regions = describe_regions_response['Regions']
+        for region in regions:
+            active_regions += [region['RegionName']]
+        for region in active_regions:
+            if region in my_regions and region != AWS_REGION:
+                comm_gov_eb_regions += [region]
+        for region in active_regions:
+            if region in my_regions:
+                regions_list += [region]
+        return comm_gov_eb_regions, regions_list
+    except Exception as e:
+        return e
     
 def cfnresponse_send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False):
     responseUrl = event['ResponseURL']
@@ -99,6 +125,7 @@ def lambda_handler(event, context):
     logger.info('Context {}'.format(context))
     aws_account_id = context.invoked_function_arn.split(":")[4]
     OrgId = get_management_id()
+    comm_gov_eb_regions, regions_list = process_regions(AWS_REGION, MY_REGIONS)
     try:
         secret_str = get_secret(SECRET_STORE_NAME, SECRET_STORE_REGION)
         if secret_str:
@@ -154,8 +181,13 @@ def lambda_handler(event, context):
                         response_d['cs_bucket_name'] = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
                     if FALCON_ACCOUNT_TYPE == "commercial":
                         response_d['eventbus_name'] = response['body']['resources'][0]['eventbus_name']
+                        response_d['regions_list'] = regions_list
                     elif FALCON_ACCOUNT_TYPE == "govcloud" and AWS_ACCOUNT_TYPE == "govcloud" :
                         response_d['eventbus_name'] = response['body']['resources'][0]['eventbus_name'].rsplit(',')[0]
+                        response_d['regions_list'] = regions_list
+                    elif FALCON_ACCOUNT_TYPE == "govcloud" and AWS_ACCOUNT_TYPE == "commercial" :
+                        response_d['comm_gov_eb_regions'] = comm_gov_eb_regions
+                        response_d['regions_list'] = regions_list
                     cfnresponse_send(event, context, SUCCESS, response_d, "CustomResourcePhysicalID")
                 else:
                     response_d = response['body']
