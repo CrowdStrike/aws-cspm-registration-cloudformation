@@ -1,0 +1,52 @@
+##########################################
+### How to use with your existing yaml ###
+##########################################
+
+# 1. Update tags in crowdstrike_eb_rules.yml (lines 82-83)
+# 2. Upload crowdstrike_eb_rules.yml and crowdstrike_eb_rules.zip to your S3 Bucket
+# 3. In init_crowdstrike_aws_cspm_register.yml, delete resources:
+#    StackSetExecutionRole, StackSetAdministrationRole, CrowdStrikeEbStackSet and CrowdStrikeRootEbStackSet
+# 2. Now add the following code to init_crowdstrike_aws_cspm_register.yml
+# 5. Update stack in in cloudformation with 'new template' and upload your latest init_crowdstrike_aws_cspm_register.yml
+
+
+CrowdStrikeStack:
+  Type: 'AWS::CloudFormation::Stack'
+  Condition: CreateIOAResources
+  Properties:
+    Parameters:
+      EventBridgeRegions: !Ref Regions
+      EventBusName: !GetAtt TriggerRegisterAccountLambda.eventbus_name
+      CrowdStrikeAccountId: !GetAtt TriggerRegisterAccountLambda.cs_account_id
+      S3Bucket: !Ref S3Bucket
+    TemplateURL: !Sub https://${S3Bucket}.s3.amazonaws.com/crowdstrike_eb_rules.yml
+
+CrowdStrikeEbStackSet:
+  Type: 'AWS::CloudFormation::StackSet'
+  Condition: CreateIOAResources
+  Properties:
+    StackSetName: "CrowdStrike-Cloud-Security-EB-Stackset"
+    Parameters:
+      - ParameterKey: EventBridgeRegions
+        ParameterValue: !Ref Regions
+      - ParameterKey: CSAccountNumber
+        ParameterValue: !GetAtt TriggerRegisterAccountLambda.cs_account_id
+      - ParameterKey: CSEventBusName
+        ParameterValue: !GetAtt TriggerRegisterAccountLambda.eventbus_name
+      - ParameterKey: S3Bucket
+        ParameterValue: !Ref S3Bucket
+    PermissionModel: SERVICE_MANAGED
+    OperationPreferences:
+      MaxConcurrentPercentage: 100
+      FailureTolerancePercentage: 50
+      RegionConcurrencyType: PARALLEL
+    AutoDeployment: 
+      Enabled: true
+      RetainStacksOnAccountRemoval: true
+    StackInstancesGroup:
+      - DeploymentTargets:
+          AccountFilterType: NONE
+          OrganizationalUnitIds: !Ref ProvisionOU
+        Regions: 
+          - !Ref AWS::Region
+    TemplateURL: !Sub https://${S3Bucket}.s3.amazonaws.com/crowdstrike_eb_rules.yml
