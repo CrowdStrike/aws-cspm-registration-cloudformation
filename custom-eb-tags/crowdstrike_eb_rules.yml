@@ -1,0 +1,100 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CrowdStrike Cloud-Security (CSPM) Registration Template for EB Rules with Tags
+
+Parameters:
+  EventBridgeRegions:
+    Type: String
+    Description: Regions to deploy EventBridge Rules
+  EventBusName:
+    Type: String
+    Description: Name of CrowdStrike EventBus
+  CrowdStrikeAccountId:
+    Type: String
+    Description: AWS Account ID for CrowdStrike EventBus
+  S3Bucket:
+    Type: String
+  PermissionsBoundary:
+    Type: String
+    Description: The name of the policy used to set the permissions boundary for IAM roles.
+
+Conditions:
+  SetPermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
+
+Resources:
+  LambdaCrowdStrikeEBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary:
+        Fn::If:
+          - SetPermissionsBoundary
+          - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${PermissionsBoundary}'
+          - Ref: AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: { }
+      Path: /
+      Policies:
+        - PolicyName: CrowdStrikeEBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                - events:DeleteRule
+                - events:PutTargets
+                - events:DescribeRule
+                - events:EnableRule
+                - events:PutRule
+                - events:RemoveTargets
+                - events:DisableRule
+                - events:TagResource
+                - events:UntagResource
+                - iam:PassRole
+                Resource:
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/cs-*
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/*/cs-*
+                - !Sub arn:${AWS::Partition}:iam::*:role/CrowdStrike*
+                Effect: Allow
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  CrowdStrikeEBLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Environment:
+        Variables:
+          aws_region: !Ref AWS::Region
+          eb_regions: !Ref EventBridgeRegions
+          eventbus_name: !Ref EventBusName
+          cs_account_id: !Ref CrowdStrikeAccountId
+          ###
+          ###  Add Tags Here as Environment Variables
+          ###  Use format 'tag_<tag_key>: <tag_value>'
+          ###  Lambda will only create tags from variables with 'tag_' prefix
+          ###  'tag_' will be stripped from your tag key upon creation
+          ###  You may change/add tags and Update stack to apply new tags to EB Rules
+          ###
+          tag_Tag1Key: Tag1Value
+          tag_Tag2Key: Tag2Value
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt "LambdaCrowdStrikeEBRole.Arn"
+      Runtime: python3.11
+      Timeout: 900
+      FunctionName: crowdstrike-eb-rules
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: crowdstrike_eb_rules.zip
+
+  TriggerCrowdStrikeEBLambda:
+    Type: 'Custom::TriggerLambda'
+    Properties:
+      StackId: !Ref AWS::StackId
+      ServiceToken: !GetAtt
+        - CrowdStrikeEBLambda
+        - Arn
