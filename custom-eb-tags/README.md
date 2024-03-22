@@ -9,8 +9,10 @@ Cloudformation cannot natively apply tags to EventBridge Rules upon creation.  T
  1. Update tags in **crowdstrike_eb_rules.yml** (lines 82-83)
  2. Upload **crowdstrike_eb_rules.yml** and **crowdstrike_eb_rules.zip** to your S3 Bucket
  3. In **init_crowdstrike_aws_cspm_register.yml**, delete resources: `StackSetExecutionRole`, `StackSetAdministrationRole`, `CrowdStrikeEbStackSet` and `CrowdStrikeRootEbStackSet`
- 2. Now add the code from **add_to_root.yml** to **init_crowdstrike_aws_cspm_register.yml**
- 5. Update stack in in cloudformation with new template and upload your latest **init_crowdstrike_aws_cspm_register.yml**
+ 4. Add you tags to the resources in **add_to_root.yml**
+ 5. Now add the code from **add_to_root.yml** to the resources section of **init_crowdstrike_aws_cspm_register.yml**
+ 6. In **init_crowdstrike_aws_cspm_register.yml** update parameter `Regions` to `Type: String`
+ 7. Update stack in in cloudformation with new template and upload your latest **init_crowdstrike_aws_cspm_register.yml**
 
 ## How it Works
 
