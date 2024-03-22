@@ -6,11 +6,12 @@
 # 2. Upload crowdstrike_eb_rules.yml and crowdstrike_eb_rules.zip to your S3 Bucket
 # 3. In init_crowdstrike_aws_cspm_register.yml, delete resources:
 #    StackSetExecutionRole, StackSetAdministrationRole, CrowdStrikeEbStackSet and CrowdStrikeRootEbStackSet
-# 2. Now add the following code to init_crowdstrike_aws_cspm_register.yml
-# 5. Update stack in in cloudformation with 'new template' and upload your latest init_crowdstrike_aws_cspm_register.yml
+# 4. Now add the following code to the resources section of init_crowdstrike_aws_cspm_register.yml
+# 5. In init_crowdstrike_aws_cspm_register.yml update parameter "Regions" to Type: String
+# 6. Update stack in in cloudformation with 'new template' and upload your latest init_crowdstrike_aws_cspm_register.yml
 
 
-CrowdStrikeStack:
+CrowdStrikeEbStack:
   Type: 'AWS::CloudFormation::Stack'
   Condition: CreateIOAResources
   Properties:
@@ -29,9 +30,9 @@ CrowdStrikeEbStackSet:
     Parameters:
       - ParameterKey: EventBridgeRegions
         ParameterValue: !Ref Regions
-      - ParameterKey: CSAccountNumber
+      - ParameterKey: CrowdStrikeAccountId
         ParameterValue: !GetAtt TriggerRegisterAccountLambda.cs_account_id
-      - ParameterKey: CSEventBusName
+      - ParameterKey: EventBusName
         ParameterValue: !GetAtt TriggerRegisterAccountLambda.eventbus_name
       - ParameterKey: S3Bucket
         ParameterValue: !Ref S3Bucket
