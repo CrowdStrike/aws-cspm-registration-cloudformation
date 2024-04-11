@@ -6,10 +6,10 @@ Parameters:
   EventBridgeRegions:
     Type: String
     Description: Regions to deploy EventBridge Rules
-  EventBusName:
+  CSEventBusName:
     Type: String
     Description: Name of CrowdStrike EventBus
-  CrowdStrikeAccountId:
+  CSAccountNumber:
     Type: String
     Description: AWS Account ID for CrowdStrike EventBus
   S3Bucket:
@@ -17,6 +17,7 @@ Parameters:
   PermissionsBoundary:
     Type: String
     Description: The name of the policy used to set the permissions boundary for IAM roles.
+    Default: ''
 
 Conditions:
   SetPermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
@@ -70,8 +71,8 @@ Resources:
         Variables:
           aws_region: !Ref AWS::Region
           eb_regions: !Ref EventBridgeRegions
-          eventbus_name: !Ref EventBusName
-          cs_account_id: !Ref CrowdStrikeAccountId
+          eventbus_name: !Ref CSEventBusName
+          cs_account_id: !Ref CSAccountNumber
           ###
           ###  Add Tags Here as Environment Variables
           ###  Use format 'tag_<tag_key>: <tag_value>'
