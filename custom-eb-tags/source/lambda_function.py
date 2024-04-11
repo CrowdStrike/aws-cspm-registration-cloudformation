@@ -216,4 +216,6 @@ def lambda_handler(event, context):
     except Exception as err:
         error = 'EB Creation Failed {}'.format(err)
         logger.info(error)
-        cfnresponse_send(event, FAILED, error)
+        response_data = {}
+        response_data['error'] = error
+        cfnresponse_send(event, FAILED, response_data)

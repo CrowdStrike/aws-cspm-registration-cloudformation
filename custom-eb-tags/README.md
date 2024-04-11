@@ -8,15 +8,40 @@ Cloudformation cannot natively apply tags to EventBridge Rules upon creation.  T
 
  1. Update tags in **crowdstrike_eb_rules.yml** (lines 82-83)
  2. Upload **crowdstrike_eb_rules.yml** and **crowdstrike_eb_rules.zip** to your S3 Bucket
+ 3. Give s3::GetObject permissions to your child accounts in the Bucket Policy.  See example below.
  3. In **init_crowdstrike_aws_cspm_register.yml**, delete resources: `StackSetExecutionRole`, `StackSetAdministrationRole`, `CrowdStrikeEbStackSet` and `CrowdStrikeRootEbStackSet`
- 4. Add you tags to the resources in **add_to_root.yml**
- 5. Now add the code from **add_to_root.yml** to the resources section of **init_crowdstrike_aws_cspm_register.yml**
- 6. In **init_crowdstrike_aws_cspm_register.yml** update parameter `Regions` to `Type: String`
- 7. Update stack in in cloudformation with new template and upload your latest **init_crowdstrike_aws_cspm_register.yml**
+ 2. Now add the code from **add_to_root.yml** to **init_crowdstrike_aws_cspm_register.yml**
+ 5. Update stack in in cloudformation with new template and upload your latest **init_crowdstrike_aws_cspm_register.yml**
 
 ## How it Works
 
 Instead of using CloudFormation resources to create the EventBridge rules required by CrowdStrike Cloud Security IOAs, the stack instead creates a lambda function to create the EventBridge Rules, Targets and Tags using Python's Boto3.  The lambda function can accept any number of tags as long as they are provided in the environment variables of the resource in **crowdstrike_eb_rules.yml**.  When adding tags to the environment variables, use format `tag_<tag_key>: <tag_value>` as the Lambda will only create tags from variables with 'tag_' prefix.  The prefix `tag_` will be stripped from your tag key upon creation.  You may change/add tags and **Update** stack to apply new tags to EB Rules.
+
+## Example S3 Bucket Policy
+The following policy demonstrates how to give s3::GetObject permissions to child accounts so the crowdstrike_eb_rules lambda function can source the zip package from your S3 bucket.
+
+```
+{
+    "Version": "2012-10-17",
+    "Id": "Policy123456789",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::123456789123:root",
+                    "arn:aws:iam::987654321987:root"
+                ]
+            },
+            "Action": "s3:GetObject",
+            "Resource": [
+                "arn:aws:s3:::BUCKETNAME",
+                "arn:aws:s3:::BUCKETNAME/crowdstrike_eb_rules.zip"
+            ]
+        }
+    ]
+}
+```
 
 ## Questions or concerns?
 
