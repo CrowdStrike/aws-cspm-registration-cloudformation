@@ -508,72 +508,31 @@ Resources:
             - '"}'
 
   # Auto register
-  # CreateAccountRule:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     Description: Trigger lambda when accounts are created.
-  #     EventPattern:
-  #       source:
-  #         - "aws.organizations"
-  #       detail-type:
-  #         - "AWS API Call via CloudTrail"
-  #       detail:
-  #         eventSource:
-  #           - "organizations.amazonaws.com"
-  #         eventName:
-  #           - "MoveAccount"
-  #     Name: cs-multi-cid-trigger
-  #     State: enabled
-  #     Targets: 
-  #       - Id: trigger-multi-cid-lambda
-  #         Arn: !GetAtt MultiCidLambda.arn
+  CreateAccountRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger lambda when accounts are created.
+      EventPattern:
+        source:
+          - "aws.organizations"
+        detail-type:
+          - "AWS API Call via CloudTrail"
+        detail:
+          eventSource:
+            - "organizations.amazonaws.com"
+          eventName:
+            - "MoveAccount"
+      Name: cs-multi-cid-trigger
+      State: ENABLED
+      Targets: 
+        - Id: trigger-multi-cid-lambda
+          Arn: !GetAtt RegisterNewAccountsLambda.Arn
 
-  # InvokeLambdaPermission: 
-  #   Type: AWS::Lambda::Permission
-  #   DependsOn: EKSLambda
-  #   Properties: 
-  #     FunctionName: !Ref MultiCidLambda
-  #     Action: "lambda:InvokeFunction"
-  #     Principal: "events.amazonaws.com"
-  #     SourceArn: !GetAtt CreateAccountRule.Arn
-
-  # LambdaRole:
-  #   Type: 'AWS::IAM::Role'
-  #   Properties:
-  #     RoleName: crowdstrike-multi-cid-lambda-role
-  #     AssumeRolePolicyDocument:
-  #       Version: "2012-10-17"
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service:
-  #               - lambda.amazonaws.com
-  #           Action:
-  #             - 'sts:AssumeRole'
-  #     ManagedPolicyArns:
-  #       - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-  #     Policies:
-  #       - PolicyName: crowdstrike-multi-cid-lambda-policy
-  #         PolicyDocument:
-  #           Version: "2012-10-17"
-  #           Statement:
-  #             - Effect: Allow
-  #               Action: 
-  #                 - cloudformation:*
-  #               Resource: '*'
-
-  # MultiCidLambda:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     Environment:
-  #       Variables:
-  #         var: value
-  #     Handler: lambda_function.lambda_handler
-  #     MemorySize: 128
-  #     Role: !GetAtt "LambdaRole.Arn"
-  #     Runtime: python3.11
-  #     Timeout: 300
-  #     FunctionName: crowdstrike-multi-cid-function
-  #     Code:
-  #       S3Bucket: !Ref S3Bucket
-  #       S3Key: lambda.zip
+  InvokeLambdaPermission: 
+    Type: AWS::Lambda::Permission
+    DependsOn: RegisterNewAccountsLambda
+    Properties: 
+      FunctionName: !Ref RegisterNewAccountsLambda
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt CreateAccountRule.Arn

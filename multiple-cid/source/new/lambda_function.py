@@ -645,8 +645,8 @@ def lambda_handler(event, context):
     enable_ioa = enable_ioa_str.lower()
     my_regions = get_active_regions()
 
-    account = event['requestParameter']['accountId']
-    ou = ['eventrequestParameters']['destinationParentId']
+    account = event['requestParameters']['accountId']
+    ou = event['requestParameters']['destinationParentId']
 
     try:
         secret_name = f'CrowdStrikeAPISecret-{ou}'
