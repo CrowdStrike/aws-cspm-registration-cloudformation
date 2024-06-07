@@ -145,6 +145,13 @@ Parameters:
       - 'True'
       - 'False'
     Default: 'True'
+  EnableIOA:
+    Type: String
+    Description: Choose True to enable Indicators of Attack.
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
   EnableSensorManagement:
     Type: String
     AllowedValues:
@@ -174,6 +181,10 @@ Parameters:
   RootOU:
     Type: String
     Description: Please enter the Root OU (eg. r-****) to provision StackSet Roles against each account.
+    Default: ''
+  Regions:
+    Type: String
+    Description: List of regions to enable IOA (No Spaces).
     Default: ''
 
 Resources:
@@ -346,6 +357,7 @@ Resources:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ReadOnlyAccess'
 
   # Lambda Function to register and onboard existing accounts
   RegisterExistingAccountsLambda:
@@ -367,6 +379,9 @@ Resources:
           ou_list: !Join [ ",", [ !Ref OUA, !Ref OUB ] ]
           admin_role: !GetAtt StackSetAdministrationRole.Arn
           exec_role: !Ref StackSetExecRole
+          enable_ioa: !Ref EnableIOA
+          s3_bucket: !Ref S3Bucket
+          regions: !Ref Regions
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -395,6 +410,9 @@ Resources:
           current_region: !Ref AWS::Region
           admin_role: !GetAtt StackSetAdministrationRole.Arn
           exec_role: !Ref StackSetExecRole
+          enable_ioa: !Ref EnableIOA
+          s3_bucket: !Ref S3Bucket
+          regions: !Ref Regions
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -403,7 +421,7 @@ Resources:
       FunctionName: crowdstrike-cloud-new-registration
       Code:
         S3Bucket: !Ref S3Bucket
-        S3Key: new_clusters_lambda_function.zip
+        S3Key: new_accounts_lambda_function.zip
 
   # Trigger Lambda Function
   TriggerRegisterExistingAccountsLambda:
