@@ -33,7 +33,7 @@ AWS_REGION = os.environ['current_region']
 STACKSET_ADMIN_ROLE = os.environ['admin_role']
 STACKSET_EXEC_ROLE = os.environ['exec_role']
 ENABLE_IOA = eval(os.environ['enable_ioa'])
-S3_BUCKET = eval(os.environ['s3_bucket'])
+S3_BUCKET = os.environ['s3_bucket']
 REGIONS = os.environ['regions']
 
 def get_secret(secret_name, secret_region):
