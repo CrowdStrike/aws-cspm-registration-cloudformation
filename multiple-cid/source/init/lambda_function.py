@@ -330,13 +330,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -378,8 +378,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -400,13 +400,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -443,8 +443,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -481,8 +481,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -526,13 +526,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -574,8 +574,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -596,13 +596,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -639,8 +639,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -672,8 +672,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -710,8 +710,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
