@@ -4,7 +4,6 @@ import os
 import sys
 import subprocess
 import boto3
-import requests
 import base64
 import datetime
 from botocore.exceptions import ClientError
@@ -36,6 +35,8 @@ STACKSET_EXEC_ROLE = os.environ['exec_role']
 ENABLE_IOA = eval(os.environ['enable_ioa'])
 S3_BUCKET = os.environ['s3_bucket']
 REGIONS = os.environ['regions']
+OU = os.environ['ou']
+ACCOUNTS = os.environ['accounts']
 
 def get_secret(secret_name, secret_region):
     session = boto3.session.Session()
@@ -189,30 +190,6 @@ def add_stack_instance(account, iam_role_name, external_id, cs_role_name, cs_acc
         CallAs='SELF'
     )
 
-def cfnresponse_send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False):
-    responseUrl = event['ResponseURL']
-    responseBody = {}
-    responseBody['Status'] = responseStatus
-    responseBody['Reason'] = 'See the details in CloudWatch Log Stream: '
-    responseBody['PhysicalResourceId'] = physicalResourceId
-    responseBody['StackId'] = event['StackId']
-    responseBody['RequestId'] = event['RequestId']
-    responseBody['LogicalResourceId'] = event['LogicalResourceId']
-    responseBody['Data'] = responseData
-    json_responseBody = json.dumps(responseBody)
-    print("Response body:\n" + json_responseBody)
-    headers = {
-        'content-type': '',
-        'content-length': str(len(json_responseBody))
-    }
-    try:
-        response = requests.put(responseUrl,
-                                data=json_responseBody,
-                                headers=headers)
-        print("Status code: " + response.reason)
-    except Exception as e:
-        print("send(..) failed executing requests.put(..): " + str(e))
-
 def get_active_regions():
     session = boto3.session.Session()
     client = session.client(
@@ -242,76 +219,90 @@ def lambda_handler(event, context):
     sensor_management = sensor_management_str.lower()
     enable_ioa_str = str(ENABLE_IOA)
     enable_ioa = enable_ioa_str.lower()
-    accounts = []
     my_regions = get_active_regions()
-    ous = list(OU_LIST.split(",")) 
+    if 'auto' in ACCOUNTS:
+        accounts = []
+        ous = list(OU_LIST.split(",")) 
+        try:
+            for ou in ous:
+                secret_name = f'CrowdStrikeAPISecret-{ou}'
+                secret_str = get_secret(secret_name, AWS_REGION)
+                logger.info(f'secret_str: {secret_str}')
+                if secret_str:
+                    secrets_dict = json.loads(secret_str)
+                    FalconClientId = secrets_dict['FalconClientId']
+                    FalconSecret = secrets_dict['FalconSecret']
+                    FalconCloud = secrets_dict['FalconCloud']
+                session = boto3.session.Session()
+                client = session.client(
+                    service_name='organizations',
+                    region_name=AWS_REGION
+                )
+                children = client.list_children(
+                    ParentId=ou,
+                    ChildType='ACCOUNT'
+                )
+                accounts = children.get('Children')
+        except Exception as err:
+            logger.info('Registration Failed {}'.format(err))
+    else: 
+        accounts = list(ACCOUNTS.split(","))
+        ou = OU
+        secret_name = f'CrowdStrikeAPISecret-{ou}'
+        secret_str = get_secret(secret_name, AWS_REGION)
+        logger.info(f'secret_str: {secret_str}')
+        if secret_str:
+            secrets_dict = json.loads(secret_str)
+            FalconClientId = secrets_dict['FalconClientId']
+            FalconSecret = secrets_dict['FalconSecret']
+            FalconCloud = secrets_dict['FalconCloud']
     try:
-        for ou in ous:
-            secret_name = f'CrowdStrikeAPISecret-{ou}'
-            secret_str = get_secret(secret_name, AWS_REGION)
-            logger.info(f'secret_str: {secret_str}')
-            if secret_str:
-                secrets_dict = json.loads(secret_str)
-                FalconClientId = secrets_dict['FalconClientId']
-                FalconSecret = secrets_dict['FalconSecret']
-                FalconCloud = secrets_dict['FalconCloud']
-            session = boto3.session.Session()
-            client = session.client(
-                service_name='organizations',
-                region_name=AWS_REGION
-            )
-            children = client.list_children(
-                ParentId=ou,
-                ChildType='ACCOUNT'
-            )
-            accounts = children.get('Children')
-            for i in accounts:
+        for i in accounts:
+            if 'auto' in ACCOUNTS:
                 account = i.get('Id')
-                response = register_account(account, FalconClientId, FalconSecret, FalconCloud)
-                
-                if response['status_code'] == 400:
-                    error = response['body']['errors'][0]['message']
-                    logger.info(f'Account {account} Registration Failed with reason... {error}')
-                elif response['status_code'] == 201:
-                    logger.info(f'Account {account} Registration Succeeded')
-                    cs_account = response['body']['resources'][0]['intermediate_role_arn'].rsplit('::')[1]
-                    cs_account_id = cs_account.rsplit(':')[0]
-                    iam_role_name = response['body']['resources'][0]['iam_role_arn'].rsplit('/')[1]
-                    cs_role_name = response['body']['resources'][0]['intermediate_role_arn'].rsplit('/')[1]
-                    external_id = response['body']['resources'][0]['external_id']
-                    logger.info(cs_account)
-                    logger.info(cs_account_id)
-                    if "gov" not in FalconCloud:
-                        cs_eventbus_name = response['body']['resources'][0]['eventbus_name']
-                        if not EXISTING_CLOUDTRAIL:
-                            cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                            add_stack_instance(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa, existing_cloudtrail, sensor_management, enable_ioa)
-                        else:
-                            cs_bucket_name = 'none'
-                            add_stack_instance(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+            else:
+                account = i
+            response = register_account(account, FalconClientId, FalconSecret, FalconCloud)
+            
+            if response['status_code'] == 400:
+                error = response['body']['errors'][0]['message']
+                logger.info(f'Account {account} Registration Failed with reason... {error}')
+            elif response['status_code'] == 201:
+                logger.info(f'Account {account} Registration Succeeded')
+                cs_account = response['body']['resources'][0]['intermediate_role_arn'].rsplit('::')[1]
+                cs_account_id = cs_account.rsplit(':')[0]
+                iam_role_name = response['body']['resources'][0]['iam_role_arn'].rsplit('/')[1]
+                cs_role_name = response['body']['resources'][0]['intermediate_role_arn'].rsplit('/')[1]
+                external_id = response['body']['resources'][0]['external_id']
+                logger.info(cs_account)
+                logger.info(cs_account_id)
+                if "gov" not in FalconCloud:
+                    cs_eventbus_name = response['body']['resources'][0]['eventbus_name']
+                    if not EXISTING_CLOUDTRAIL:
+                        cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
+                        add_stack_instance(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa, existing_cloudtrail, sensor_management, enable_ioa)
+                    else:
+                        cs_bucket_name = 'none'
+                        add_stack_instance(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
 
-                    elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "govcloud" :
-                        cs_eventbus_name = response['body']['resources'][0]['eventbus_name'].rsplit(',')[0]
-                        if not EXISTING_CLOUDTRAIL:
-                            cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                            gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
-                        else:
-                            cs_bucket_name = 'none'
-                            gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "govcloud" :
+                    cs_eventbus_name = response['body']['resources'][0]['eventbus_name'].rsplit(',')[0]
+                    if not EXISTING_CLOUDTRAIL:
+                        cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
+                        gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                    else:
+                        cs_bucket_name = 'none'
+                        gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
 
-                    elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "commercial" :
-                        if not EXISTING_CLOUDTRAIL:
-                            cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                            add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
-                        else:
-                            cs_bucket_name = 'none'
-                            add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
-        response_d = {"status": "complete"}
-        cfnresponse_send(event, context, SUCCESS, response_d, "CustomResourcePhysicalID")
+                elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "commercial" :
+                    if not EXISTING_CLOUDTRAIL:
+                        cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
+                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                    else:
+                        cs_bucket_name = 'none'
+                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
     except Exception as err:
         logger.info('Registration Failed {}'.format(err))
-        response_d = {"status": "failed, see cloudwatch logs"}
-        cfnresponse_send(event, context, FAILED, response_d, "CustomResourcePhysicalID")
 
 def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa):
     now = datetime.datetime.now()
