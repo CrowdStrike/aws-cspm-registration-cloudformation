@@ -382,6 +382,8 @@ Resources:
           enable_ioa: !Ref EnableIOA
           s3_bucket: !Ref S3Bucket
           regions: !Ref Regions
+          accounts: 'auto'
+          ou: 'auto'
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -424,14 +426,14 @@ Resources:
         S3Key: new_accounts_lambda_function.zip
 
   # Trigger Lambda Function
-  TriggerRegisterExistingAccountsLambda:
-    Type: 'Custom::TriggerLambda'
-    DependsOn:
-      - RegisterExistingAccountsLambda
-    Properties:
-      ServiceToken: !GetAtt
-        - RegisterExistingAccountsLambda
-        - Arn
+  # TriggerRegisterExistingAccountsLambda:
+  #   Type: 'Custom::TriggerLambda'
+  #   DependsOn:
+  #     - RegisterExistingAccountsLambda
+  #   Properties:
+  #     ServiceToken: !GetAtt
+  #       - RegisterExistingAccountsLambda
+  #       - Arn
 
   # Create Secrets for registration lambda
   CrowdStrikeSecretA:
