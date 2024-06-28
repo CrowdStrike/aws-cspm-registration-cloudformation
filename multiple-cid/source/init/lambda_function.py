@@ -297,10 +297,10 @@ def lambda_handler(event, context):
                 elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "commercial" :
                     if not EXISTING_CLOUDTRAIL:
                         cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
                     else:
                         cs_bucket_name = 'none'
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
     except Exception as err:
         logger.info('Registration Failed {}'.format(err))
 
