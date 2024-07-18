@@ -297,10 +297,10 @@ def lambda_handler(event, context):
                 elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "commercial" :
                     if not EXISTING_CLOUDTRAIL:
                         cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
                     else:
                         cs_bucket_name = 'none'
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
     except Exception as err:
         logger.info('Registration Failed {}'.format(err))
 
@@ -330,13 +330,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -378,8 +378,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -400,13 +400,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -443,8 +443,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -481,8 +481,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -513,7 +513,7 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         client.create_stack_set(
             StackSetName=f'CrowdStrike-Cloud-Security-Stackset-{account}',
             Description='Stackset to onboard account with CrowdStrike Cloud Security',
-            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_gov_cspm.json',
+            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_cspm.json',
             Parameters=[
                 {
                     'ParameterKey': 'RoleName',
@@ -526,13 +526,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -574,8 +574,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -583,7 +583,7 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         client.create_stack_set(
             StackSetName=f'CrowdStrike-Cloud-Security-Stackset-{account}',
             Description='Stackset to onboard account with CrowdStrike Cloud Security',
-            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_gov_cspm.json',
+            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_cspm.json',
             Parameters=[
                 {
                     'ParameterKey': 'RoleName',
@@ -596,13 +596,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -639,8 +639,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -672,8 +672,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -710,8 +710,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
