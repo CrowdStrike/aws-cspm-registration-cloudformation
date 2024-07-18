@@ -8,9 +8,16 @@ import base64
 import datetime
 from botocore.exceptions import ClientError
 
+os.chdir('/tmp')
+requirements = open("requirements.txt", "x")
+requirements = open("requirements.txt", "a")
+requirements.write("urllib3<2")
+requirements = open("requirements.txt", "a")
+requirements.write("requests==2.31.0")
 # pip install falconpy package to /tmp/ and add to path
-subprocess.call('pip install crowdstrike-falconpy -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip install crowdstrike-falconpy -r /tmp/requirements.txt -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 sys.path.insert(1, '/tmp/')
+import requests
 from falconpy import CSPMRegistration
 
 logger = logging.getLogger()
