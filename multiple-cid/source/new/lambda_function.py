@@ -4,14 +4,20 @@ import os
 import sys
 import subprocess
 import boto3
-import requests
 import base64
 import datetime
 from botocore.exceptions import ClientError
 
+os.chdir('/tmp')
+requirements = open("requirements.txt", "x")
+requirements = open("requirements.txt", "a")
+requirements.write("urllib3<2")
+requirements = open("requirements.txt", "a")
+requirements.write("requests==2.31.0")
 # pip install falconpy package to /tmp/ and add to path
-subprocess.call('pip install crowdstrike-falconpy -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip install crowdstrike-falconpy -r /tmp/requirements.txt -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 sys.path.insert(1, '/tmp/')
+import requests
 from falconpy import CSPMRegistration
 
 logger = logging.getLogger()
@@ -214,13 +220,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -262,8 +268,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -284,13 +290,13 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -327,8 +333,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -365,8 +371,8 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -410,13 +416,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -458,8 +464,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -480,13 +486,13 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_role_name,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSRoleName',
+                    'ParameterValue': cs_role_name,
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': cs_account_id,
-                    'ParameterValue': 'string',
+                    'ParameterKey': 'CSAccountNumber',
+                    'ParameterValue': cs_account_id,
                     'UsePreviousValue': False,
                 },
                 {
@@ -523,8 +529,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
             Capabilities=[
                 'CAPABILITY_NAMED_IAM'
             ],
-            AdministrationRoleARN='string',
-            ExecutionRoleName='string',
+            AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+            ExecutionRoleName=STACKSET_EXEC_ROLE,
             PermissionModel='SELF_MANAGED',
             CallAs='SELF',
         )
@@ -556,8 +562,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -594,8 +600,8 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         Capabilities=[
             'CAPABILITY_NAMED_IAM'
         ],
-        AdministrationRoleARN='string',
-        ExecutionRoleName='string',
+        AdministrationRoleARN=STACKSET_ADMIN_ROLE,
+        ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
     )
@@ -692,10 +698,10 @@ def lambda_handler(event, context):
                 elif "gov" in FalconCloud and AWS_ACCOUNT_TYPE == "commercial" :
                     if not EXISTING_CLOUDTRAIL:
                         cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
                     else:
                         cs_bucket_name = 'none'
-                        add_stack_instance(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
+                        comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, FalconClientId, FalconSecret, existing_cloudtrail, sensor_management, enable_ioa)
     except Exception as err:
         logger.info('Registration Failed {}'.format(err))
     
