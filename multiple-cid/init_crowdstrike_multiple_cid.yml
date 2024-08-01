@@ -312,7 +312,7 @@ Resources:
           Regions:
             - !Ref AWS::Region
       StackSetName: crowdstrike-stackset-role-setup
-      TemplateURL: !Sub https://${S3Bucket}.s3.amazonaws.com/crowdstrike_stackset_role_setup.yml
+      TemplateURL: !Sub https://${S3Bucket}.s3.${AWS::Region}.amazonaws.com/crowdstrike_stackset_role_setup.yml
 
   # IAM Role for Lambda Function Execution
   LambdaCrowdStrikeRegistrationRole:
