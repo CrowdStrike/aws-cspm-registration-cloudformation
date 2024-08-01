@@ -462,8 +462,7 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
         Regions=[AWS_REGION],
         OperationPreferences={
             'FailureTolerancePercentage': 100,
-            'MaxConcurrentPercentage': 100,
-            'ConcurrencyMode': 'SOFT_FAILURE_TOLERANCE'
+            'MaxConcurrentPercentage': 100
         },
         OperationId=f'{account}-{timestamp}',
         CallAs='SELF'
@@ -500,8 +499,7 @@ def gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_n
         Regions=my_regions,
         OperationPreferences={
             'FailureTolerancePercentage': 100,
-            'MaxConcurrentPercentage': 100,
-            'ConcurrencyMode': 'SOFT_FAILURE_TOLERANCE'
+            'MaxConcurrentPercentage': 100
         },
         OperationId=f'{account}-{timestamp}',
         CallAs='SELF'
