@@ -520,7 +520,7 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
         client.create_stack_set(
             StackSetName=f'CrowdStrike-Cloud-Security-Stackset-{account}',
             Description='Stackset to onboard account with CrowdStrike Cloud Security',
-            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_cspm.json',
+            TemplateURL=f'https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/crowdstrike_aws_gov_cspm.json',
             Parameters=[
                 {
                     'ParameterKey': 'RoleName',
@@ -544,7 +544,7 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                 },
                 {
                     'ParameterKey': 'EnableIOA',
-                    'ParameterValue': enable_ioa,
+                    'ParameterValue': 'false',
                     'UsePreviousValue': False,
                 },
                 {

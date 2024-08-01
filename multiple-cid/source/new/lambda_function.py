@@ -427,7 +427,7 @@ def comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_
                 },
                 {
                     'ParameterKey': 'EnableIOA',
-                    'ParameterValue': enable_ioa,
+                    'ParameterValue': 'false',
                     'UsePreviousValue': False,
                 },
                 {
