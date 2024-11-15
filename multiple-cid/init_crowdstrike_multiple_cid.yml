@@ -5,21 +5,34 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label: 
-          default: CID A
+          default: Multi-CID Configuration
         Parameters:
           - CIDA
           - OUA
           - FalconClientIdA
           - FalconSecretA
           - FalconCloudA
-      - Label: 
-          default: CID B
-        Parameters:
           - CIDB
           - OUB
           - FalconClientIdB
           - FalconSecretB
           - FalconCloudB
+      - Label: 
+          default: CSPM Configuration
+        Parameters:
+          - EnableIOA
+          - UseExistingCloudTrail
+          - EnableSensorManagement
+          - APICredentialsStorageMode
+          - Regions
+      - Label: 
+          default: Misc
+        Parameters:
+          - S3Bucket
+          - AWSAccountType
+          - RootOU
+          - StackSetAdminRole
+          - StackSetExecRole
 
 Parameters:
   StackSetAdminRole:
@@ -109,12 +122,6 @@ Parameters:
   S3Bucket:
     Type: String
     Default: ''
-  FalconAccountType:
-    Type: String
-    AllowedValues:
-      - 'commercial'
-      - 'govcloud'
-    Default: 'commercial'
   AWSAccountType:
     Type: String
     AllowedValues:
