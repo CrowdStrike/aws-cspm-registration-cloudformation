@@ -21,7 +21,7 @@ This repository provides CloudFormation templates to onboard AWS Organizations w
 
 ## Setup
 1. Download the contents of this repository.
-2. Log in to the Management Account of your AWS Organization
+2. Log in to the Management Account of your AWS Organization.
 3. Upload the following files to the root of an S3 Bucket.
 - init_lambda_function.zip 
 - new_accounts_lambda_function.zip
@@ -38,7 +38,7 @@ This repository provides CloudFormation templates to onboard AWS Organizations w
 ## Parameter Details
 The Parameters in this template are divided into three sections.
 
-### Multi-CID COnfiguration
+### Multi-CID Configuration
 This template provides parameters to create two AWS Secrets Manager Secrets, each to contain a different set of Falcon API credentials and the corresponding list of AWS OUs.  These secrets determine which AWS OUs are registered to which Falcon CID.
 | Parameter | Description | Options |
 |---|---|---|
@@ -53,6 +53,8 @@ This template provides parameters to create two AWS Secrets Manager Secrets, eac
 
 ### CSPM Configuration
 This section provides the parameters necessary to configure your CSPM Registration.
+| Parameter | Description | Options |
+|---|---|---|
 |EnableIOA| Whether to enable IOAs| true, false |
 |UseExistingCloudTrail| Select False ONLY if you wish to create a new cloudtrail for Read-Only IOAs (this is not common) | true, false |
 |EnableSensorManagement| Whether to enable 1Click | true, false|
@@ -61,6 +63,8 @@ This section provides the parameters necessary to configure your CSPM Registrati
 
 ### Misc
 This section provides additional parameters to complete the deployment of this solution.
+| Parameter | Description | Options |
+|---|---|---|
 |S3Bucket| NAME of the S3 Bucket used in Step 3 of Setup| string |
 |AWSAccountType| Whether this AWS Organization is commercial or GovCloud | commercial, govcloud |
 |RootOU| the root OU (eg. r-****) of this AWS Organization | string|
