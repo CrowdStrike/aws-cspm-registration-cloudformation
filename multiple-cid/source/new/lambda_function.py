@@ -690,8 +690,8 @@ def lambda_handler(event, context):
     enable_ioa_str = str(ENABLE_IOA)
     enable_ioa = enable_ioa_str.lower()
     my_regions, comm_gov_eb_regions = get_active_regions()
-    account = event['requestParameters']['accountId']
-    ou = event['requestParameters']['destinationParentId']
+    account = event['detail']['requestParameters']['accountId']
+    ou = event['detail']['requestParameters']['destinationParentId']
     try:
         secrets = list(SECRET_LIST.split(","))
         for i in secrets:
