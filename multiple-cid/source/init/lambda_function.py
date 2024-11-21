@@ -465,7 +465,7 @@ def comm_gov_stacksets(my_regions,
                 },
                 {
                     'ParameterKey': 'EnableIOA',
-                    'ParameterValue': enable_ioa,
+                    'ParameterValue': 'false',
                     'UsePreviousValue': False,
                 },
                 {
@@ -535,7 +535,7 @@ def comm_gov_stacksets(my_regions,
                 },
                 {
                     'ParameterKey': 'EnableIOA',
-                    'ParameterValue': enable_ioa,
+                    'ParameterValue': 'false',
                     'UsePreviousValue': False,
                 },
                 {
