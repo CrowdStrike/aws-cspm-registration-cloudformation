@@ -672,11 +672,11 @@ def get_active_regions():
         for region in regions:
             active_regions += [region['RegionName']]
         for region in active_regions:
-            if region in my_regions and region != AWS_REGION:
-                comm_gov_eb_regions += [region]
-        for region in active_regions:
             if region in REGIONS:
                 my_regions += [region]
+        for region in active_regions:
+            if region in my_regions and region != AWS_REGION:
+                comm_gov_eb_regions += [region]
         return my_regions, comm_gov_eb_regions
     except ClientError as error:
         raise error
