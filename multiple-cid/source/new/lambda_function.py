@@ -413,8 +413,7 @@ def gov_gov_stacksets(my_regions,
         CallAs='SELF'
     )
 
-def comm_gov_stacksets(my_regions,
-                       account,
+def comm_gov_stacksets(account,
                        iam_role_name,
                        external_id,
                        cs_role_name,
@@ -424,7 +423,7 @@ def comm_gov_stacksets(my_regions,
                        falcon_secret,
                        existing_cloudtrail,
                        sensor_management,
-                       enable_ioa
+                       comm_gov_eb_regions
                       ):
     """Create CloudFormation StackSets for Commercial to Gov"""
     now = datetime.datetime.now()
@@ -607,7 +606,7 @@ def comm_gov_stacksets(my_regions,
     client.create_stack_instances(
         StackSetName=f'CrowdStrike-Cloud-Security-EB-Stackset-{account}',
         Accounts=[account],
-        Regions=my_regions,
+        Regions=comm_gov_eb_regions,
         OperationPreferences={
             'FailureTolerancePercentage': 100,
             'MaxConcurrentPercentage': 100,
@@ -664,15 +663,19 @@ def get_active_regions():
     )
     active_regions = []
     my_regions = []
+    comm_gov_eb_regions = []
     try:
         describe_regions_response = client.describe_regions(AllRegions=False)
         regions = describe_regions_response['Regions']
         for region in regions:
             active_regions += [region['RegionName']]
         for region in active_regions:
+            if region in my_regions and region != AWS_REGION:
+                comm_gov_eb_regions += [region]
+        for region in active_regions:
             if region in REGIONS:
                 my_regions += [region]
-        return my_regions
+        return my_regions, comm_gov_eb_regions
     except ClientError as error:
         raise error
 
@@ -686,7 +689,7 @@ def lambda_handler(event, context):
     sensor_management = sensor_management_str.lower()
     enable_ioa_str = str(ENABLE_IOA)
     enable_ioa = enable_ioa_str.lower()
-    my_regions = get_active_regions()
+    my_regions, comm_gov_eb_regions = get_active_regions()
     account = event['requestParameters']['accountId']
     ou = event['requestParameters']['destinationParentId']
     try:
@@ -736,9 +739,9 @@ def lambda_handler(event, context):
                             elif "gov" in falcon_cloud and AWS_ACCOUNT_TYPE == "commercial" :
                                 if not EXISTING_CLOUDTRAIL:
                                     cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                                    comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, enable_ioa)
+                                    comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
                                 else:
                                     cs_bucket_name = 'none'
-                                    comm_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, enable_ioa)
+                                    comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
     except Exception as error:
         logger.info('Registration Failed %s', error)
