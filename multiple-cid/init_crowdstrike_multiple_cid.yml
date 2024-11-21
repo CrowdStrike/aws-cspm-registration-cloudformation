@@ -305,7 +305,7 @@ Resources:
                 - cloudformation:CreateStackInstances
                 - cloudformation:CreateStackSet
                 Resource:
-                - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security-Stackset*
+                - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security*
                 - !GetAtt StackSetAdministrationRole.Arn
                 Effect: Allow
       ManagedPolicyArns:
