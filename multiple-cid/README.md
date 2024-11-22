@@ -101,7 +101,7 @@ If you fail to do so before deleting the root CloudFormation Stack, these will b
 
 A script has been included in this repo [cleanup.py](cleanup.py) to make this easier.  You may run this in your AWS CloudShell to remove the Stack Instances and StackSets before continuing to delete the root stack.
 
-**Note:** cleanup.py will prompt you to validate the list of StackSets it will delete before continuing.  Please ensure you are 100% confident in the list of StackSets before contueing.
+**Note:** cleanup.py will prompt you to validate the list of StackSets it will delete before continuing.  Please ensure you are 100% confident in the list of StackSets before continuing.
 
 **Note:** After performing cleanup steps you must goto Falcon Cloud Accounts Registration to complete the cleanup process and "Deprovision" the accounts from Falcon.  This will complete the deregistration process.
 
