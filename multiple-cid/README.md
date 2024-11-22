@@ -90,6 +90,21 @@ When an AWS Account is created AND moved under an OU, EventBridge will trigger t
 ### Troubleshooting
 If an account either does not appear in Falcon or shows as inactive more than an hour after registration, review the logs for each Lambda function in cloudwatch logs and review the StackSet for that account to ensure no errors occured during stack deployment.
 
+### Cleanup
+
+If for any reason you must roll back this deployment, it is very important to first delete the StackSet instances and StackSets created by this approach:
+- CrowdStrike-Cloud-Security-EB-Stackset-account_id
+- CrowdStrike-Cloud-Security-IOA-Stackset-account_id
+- CrowdStrike-Cloud-Security-Stackset-account_id
+
+If you fail to do so before deleting the root CloudFormation Stack, these will become inoperable because they are 'Self-Managed' StackSets which rely on the IAM Roles deployed by the root stack to function.
+
+A script has been included in this repo [cleanup.py](cleanup.py) to make this easier.  You may run this in your AWS CloudShell to remove the Stack Instances and StackSets before continuing to delete the root stack.
+
+**Note:** cleanup.py will prompt you to validate the list of StackSets it will delete before continuing.  Please ensure you are 100% confident in the list of StackSets before contueing.
+
+**Note:** After performing cleanup steps you must goto Falcon Cloud Accounts Registration to complete the cleanup process and "Deprovision" the accounts from Falcon.  This will complete the deregistration process.
+
 ## Questions or concerns?
 
 If you encounter any issues or have questions about this repository, please open an [issue](https://github.com/CrowdStrike/cloud-aws-registration-cloudformation/issues/new/choose).
