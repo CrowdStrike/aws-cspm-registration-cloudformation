@@ -737,11 +737,12 @@ def lambda_handler(event, context):
                                     gov_gov_stacksets(my_regions, account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, cs_eventbus_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, enable_ioa)
 
                             elif "gov" in falcon_cloud and AWS_ACCOUNT_TYPE == "commercial" :
-                                if not EXISTING_CLOUDTRAIL:
-                                    cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
-                                    comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
-                                else:
-                                    cs_bucket_name = 'none'
-                                    comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
+                                if comm_gov_eb_regions:
+                                    if not EXISTING_CLOUDTRAIL:
+                                        cs_bucket_name = response['body']['resources'][0]['aws_cloudtrail_bucket_name']
+                                        comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
+                                    else:
+                                        cs_bucket_name = 'none'
+                                        comm_gov_stacksets(account, iam_role_name, external_id, cs_role_name, cs_account_id, cs_bucket_name, falcon_client_id, falcon_secret, existing_cloudtrail, sensor_management, comm_gov_eb_regions)
     except Exception as error:
         logger.info('Registration Failed %s', error)
