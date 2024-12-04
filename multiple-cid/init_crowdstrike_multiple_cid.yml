@@ -200,6 +200,9 @@ Resources:
               - Action: cloudformation:*
                 Resource: '*'
                 Effect: Allow
+              - Action: secretsmanager:*
+                Resource: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials-*'
+                Effect: Allow
               - Action:
                 - iam:GetRole
                 - iam:CreateRole
