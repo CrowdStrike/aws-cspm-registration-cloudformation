@@ -87,6 +87,33 @@ When an AWS Account is created AND moved under an OU, EventBridge will trigger t
 1. Each account will have a correspondiong stackset named CrowdStrike-Cloud-Security-Stackset-{accountID}.  You can open and review the status of stack instances to confirm the account has been onboarded.
 2. Each account will appear in Falcon>Cloud Security>Cloud Accounts Registration.  Be sure to refresh the list to get the most up-to-date status of each account.
 
+### Enable/Disable Services
+This solution allows for services to be enabled or disabled after the initial deployment.
+
+#### 1Click
+If 1click was not enabled, ie. the parameter ```EnableSensorManagement``` was set to false, and you wish to enable after deployment of this solution:
+
+**For existing Accounts:**
+1. Navigate to CloudFormation StackSets and select the ```CrowdStrike-Cloud-Security-Stackset-{account-id}```.
+2. Click **Actions** and click **Override StackSet Parameters**.
+3. Add the Account ID and region and click next.
+4. Select the ```EnableSensorManagement``` and click **Edit override value** and **Override StackSet Value**.
+5. Change the value from ```false``` to ```true``` and **save changes**.
+6. Click **Next** then **Submit**
+
+This will update the stack within the target account to deploy 1Click resources.  Within a few minutes, 1Click should be **Active** in the Falcon Console.
+
+**For all Accounts going forward:**
+1. Navigate to Lambda and open the function ```crowdstrike-cloud-new-registration```.
+2. Click on **Configuration** and **Environment Variables**.
+3. Update the value on ```sensor_management``` from ```False``` to ```True```.
+4. Save.
+5. Repeat the above steps for the Lambda function ```crowdstrike-cloud-initial-registration```.
+
+This will ensure all future account registrations will apply the stacksets with ```EnableSensorManagement``` set to ```true`` which will ensure the target account is onboarded with 1Click Resources.
+
+The above steps are the same if you are instead **Disabling** 1Click after having deployed this solution with 1Click **Enabled**.  For each relevant step, instead change the value from ```True``` to ```False```.
+
 ### Troubleshooting
 If an account either does not appear in Falcon or shows as inactive more than an hour after registration, review the logs for each Lambda function in cloudwatch logs and review the StackSet for that account to ensure no errors occured during stack deployment.
 
