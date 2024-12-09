@@ -5,33 +5,34 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label: 
-          default: CID A
+          default: Multi-CID Configuration
         Parameters:
+          - CIDA
           - OUA
           - FalconClientIdA
           - FalconSecretA
           - FalconCloudA
-      - Label: 
-          default: CID B
-        Parameters:
+          - CIDB
           - OUB
           - FalconClientIdB
           - FalconSecretB
           - FalconCloudB
       - Label: 
-          default: CID C
+          default: CSPM Configuration
         Parameters:
-          - OUC
-          - FalconClientIdC
-          - FalconSecretC
-          - FalconCloudC
+          - EnableIOA
+          - UseExistingCloudTrail
+          - EnableSensorManagement
+          - APICredentialsStorageMode
+          - Regions
       - Label: 
-          default: CID D
+          default: Misc
         Parameters:
-          - OUD
-          - FalconClientIdD
-          - FalconSecretD
-          - FalconCloudD
+          - S3Bucket
+          - AWSAccountType
+          - RootOU
+          - StackSetAdminRole
+          - StackSetExecRole
 
 Parameters:
   StackSetAdminRole:
@@ -43,7 +44,11 @@ Parameters:
     Type: String
     Default: 'CrowdStrikeStackSetExecutionRole'
   OUA:
-    Description: Your AWS OU for FalconClientIdA & FalconSecretA.
+    Description: List of OUs for FalconClientIdA & FalconSecretA.
+    Type: String
+    Default: ''
+  CIDA:
+    Description: Falcon CID for OUA, FalconClientIdA & FalconSecretA.
     Type: String
     Default: ''
   FalconClientIdA:
@@ -67,7 +72,11 @@ Parameters:
       - 'usgov1'
       - 'usgov2'
   OUB:
-    Description: Your AWS OU for FalconClientIdB & FalconSecretB.
+    Description: List of OUs for FalconClientIdB & FalconSecretB.
+    Type: String
+    Default: ''
+  CIDB:
+    Description: Falcon CID for OUB, FalconClientIdB & FalconSecretB.
     Type: String
     Default: ''
   FalconClientIdB:
@@ -82,54 +91,6 @@ Parameters:
     Default: ''
   FalconCloudB:
     Description: Your CrowdStrike Falcon Cloud for OUB.
-    Type: String
-    Default: 'us1'
-    AllowedValues:
-      - 'us1'
-      - 'us2'
-      - 'eu1'
-      - 'usgov1'
-      - 'usgov2'
-  OUC:
-    Description: Your AWS OU for FalconClientIdC & FalconSecretC.
-    Type: String
-    Default: ''
-  FalconClientIdC:
-    Description: Your CrowdStrike Falcon OAuth2 Client ID for OUC.
-    NoEcho: 'true'
-    Type: String
-    Default: ''
-  FalconSecretC:
-    Description: Your CrowdStrike Falcon OAuth2 API Secret for OUC.
-    NoEcho: 'true'
-    Type: String
-    Default: ''
-  FalconCloudC:
-    Description: Your CrowdStrike Falcon Cloud for OUC.
-    Type: String
-    Default: 'us1'
-    AllowedValues:
-      - 'us1'
-      - 'us2'
-      - 'eu1'
-      - 'usgov1'
-      - 'usgov2'
-  OUD:
-    Description: Your AWS OU for FalconClientIdC & FalconSecretC.
-    Type: String
-    Default: ''
-  FalconClientIdD:
-    Description: Your CrowdStrike Falcon OAuth2 Client ID for OUC.
-    NoEcho: 'true'
-    Type: String
-    Default: ''
-  FalconSecretD:
-    Description: Your CrowdStrike Falcon OAuth2 API Secret for OUC.
-    NoEcho: 'true'
-    Type: String
-    Default: ''
-  FalconCloudD:
-    Description: Your CrowdStrike Falcon Cloud for OUC.
     Type: String
     Default: 'us1'
     AllowedValues:
@@ -161,12 +122,6 @@ Parameters:
   S3Bucket:
     Type: String
     Default: ''
-  FalconAccountType:
-    Type: String
-    AllowedValues:
-      - 'commercial'
-      - 'govcloud'
-    Default: 'commercial'
   AWSAccountType:
     Type: String
     AllowedValues:
@@ -244,6 +199,9 @@ Resources:
                 Effect: Allow
               - Action: cloudformation:*
                 Resource: '*'
+                Effect: Allow
+              - Action: secretsmanager:*
+                Resource: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials-*'
                 Effect: Allow
               - Action:
                 - iam:GetRole
@@ -350,7 +308,7 @@ Resources:
                 - cloudformation:CreateStackInstances
                 - cloudformation:CreateStackSet
                 Resource:
-                - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security-Stackset*
+                - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security*
                 - !GetAtt StackSetAdministrationRole.Arn
                 Effect: Allow
       ManagedPolicyArns:
@@ -365,8 +323,6 @@ Resources:
     DependsOn:
       - CrowdStrikeSecretA
       - CrowdStrikeSecretB
-      - CrowdStrikeSecretC
-      - CrowdStrikeSecretD
       - StackSetRoleSetup
     Properties:
       Environment:
@@ -376,14 +332,14 @@ Resources:
           credentials_storage: !Ref APICredentialsStorageMode
           aws_account_type: !Ref AWSAccountType
           current_region: !Ref AWS::Region
-          ou_list: !Join [ ",", [ !Ref OUA, !Ref OUB ] ]
           admin_role: !GetAtt StackSetAdministrationRole.Arn
           exec_role: !Ref StackSetExecRole
           enable_ioa: !Ref EnableIOA
           s3_bucket: !Ref S3Bucket
           regions: !Ref Regions
           accounts: 'auto'
-          ou: 'auto'
+          secret: 'auto'
+          secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -399,8 +355,6 @@ Resources:
     DependsOn:
       - CrowdStrikeSecretA
       - CrowdStrikeSecretB
-      - CrowdStrikeSecretC
-      - CrowdStrikeSecretD
       - StackSetRoleSetup
     Properties:
       Environment:
@@ -415,6 +369,7 @@ Resources:
           enable_ioa: !Ref EnableIOA
           s3_bucket: !Ref S3Bucket
           regions: !Ref Regions
+          secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -440,10 +395,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: CrowdStrike Credentials
-      Name: !Join
-        - '-'
-        - - CrowdStrikeAPISecret
-          - !Ref OUA
+      Name: CrowdStrikeAPISecret-A
       SecretString:
         Fn::Join:
           - ''
@@ -453,15 +405,16 @@ Resources:
             - Ref: FalconSecretA
             - '","FalconCloud": "'
             - Ref: FalconCloudA
+            - '","OUs": "'
+            - Ref: OUA
+            - '","CID": "'
+            - Ref: CIDA
             - '"}'
   CrowdStrikeSecretB:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: CrowdStrike Credentials
-      Name: !Join
-        - '-'
-        - - CrowdStrikeAPISecret
-          - !Ref OUB
+      Name: CrowdStrikeAPISecret-B
       SecretString:
         Fn::Join:
           - ''
@@ -471,42 +424,10 @@ Resources:
             - Ref: FalconSecretB
             - '","FalconCloud": "'
             - Ref: FalconCloudB
-            - '"}'
-  CrowdStrikeSecretC:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: CrowdStrike Credentials
-      Name: !Join
-        - '-'
-        - - CrowdStrikeAPISecret
-          - !Ref OUC
-      SecretString:
-        Fn::Join:
-          - ''
-          - - '{"FalconClientId":"'
-            - Ref: "FalconClientIdC"
-            - '","FalconSecret": "'
-            - Ref: FalconSecretC
-            - '","FalconCloud": "'
-            - Ref: FalconCloudC
-            - '"}'
-  CrowdStrikeSecretD:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: CrowdStrike Credentials
-      Name: !Join
-        - '-'
-        - - CrowdStrikeAPISecret
-          - !Ref OUD
-      SecretString:
-        Fn::Join:
-          - ''
-          - - '{"FalconClientId":"'
-            - Ref: "FalconClientIdD"
-            - '","FalconSecret": "'
-            - Ref: FalconSecretD
-            - '","FalconCloud": "'
-            - Ref: FalconCloudD
+            - '","OUs": "'
+            - Ref: OUB
+            - '","CID": "'
+            - Ref: CIDB
             - '"}'
 
   # Auto register
