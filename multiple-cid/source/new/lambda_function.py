@@ -14,7 +14,7 @@ requirements = open("requirements.txt", "x", encoding="utf-8")
 requirements = open("requirements.txt", "a", encoding="utf-8")
 requirements.write("urllib3<2")
 requirements = open("requirements.txt", "a", encoding="utf-8")
-requirements.write("requests==2.31.0")
+requirements.write("requests==2.32.0")
 # pip install falconpy package to /tmp/ and add to path
 subprocess.call('pip install crowdstrike-falconpy -r /tmp/requirements.txt -t /tmp/ --no-cache-dir'.split(),
                 stdout=subprocess.DEVNULL,
