@@ -758,8 +758,8 @@ def lambda_handler(event, context):
                 falcon_secret = secrets_dict['FalconSecret']
                 falcon_cloud = secrets_dict['FalconCloud']
                 ou_list = secrets_dict['OUs']
-            for i in accounts:
-                account = i.get('Id')
+            for account in accounts:
+                # account = i.get('Id')
                 response = register_account(account, falcon_client_id, falcon_secret, falcon_cloud)
                 if response['status_code'] == 400:
                     error = response['body']['errors'][0]['message']
