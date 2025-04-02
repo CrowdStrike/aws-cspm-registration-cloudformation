@@ -46,6 +46,7 @@ STACKSET_EXEC_ROLE = os.environ['exec_role']
 ENABLE_IOA = eval(os.environ['enable_ioa'])
 S3_BUCKET = os.environ['s3_bucket']
 REGIONS = os.environ['regions']
+CSPM_TEMPLATE_URL = os.environ['cspm_template_url']
 
 def get_secret(secret_name, secret_region):
     """Retrieve Falcon API Credentials from Secrets Manager"""
@@ -120,7 +121,7 @@ def add_stack_instance(account,
     client.create_stack_set(
         StackSetName=f'CrowdStrike-Cloud-Security-Stackset-{account}',
         Description='StackSet to onboard accounts with CrowdStrike',
-        TemplateURL='https://cs-prod-cloudconnect-templates.s3-us-west-1.amazonaws.com/aws_cspm_cloudformation_lambda_v2.json',
+        TemplateURL=CSPM_TEMPLATE_URL,
         Parameters=[
             {
                 'ParameterKey': 'RoleName',

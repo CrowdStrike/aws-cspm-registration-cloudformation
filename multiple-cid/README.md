@@ -2,7 +2,12 @@
 
 ## CrowdStrike AWS Registration with Multiple Falcon CIDs
 
-This repository provides CloudFormation templates to onboard AWS Organizations with two CrowdStrike Falcon CIDs.
+This repository provides CloudFormation templates to onboard AWS Organizations with two CrowdStrike Falcon CIDs.  
+
+## Tagging support
+There are two sets of templates and functions.  One supports Tags, requires at least 1 tag and only supports commercial AWS to commercial Falcon.  One does not support tagging but includes full support for GovCloud.  Please review setup steps carefully to choose the right templates and functions.
+
+**How tagging works**:  When creating the main stack, any tags you add to the cloudformation stack during the `Configure Stack Options` step will be applied to all resources created by this solution (excluding EventBridge Rules)
 
 ## Prerequisites
 
@@ -22,15 +27,24 @@ This repository provides CloudFormation templates to onboard AWS Organizations w
 ## Setup
 1. Download the contents of this repository.
 2. Log in to the Management Account of your AWS Organization.
-3. Upload the following files to the root of an S3 Bucket.
+     
+3a. Upload the following files to the root of an S3 Bucket if you want to use tagging.
+- init_lambda_function_tags.zip 
+- new_accounts_lambda_function_tags.zip
+- update_stacksets_lambda_functions_tags.zip
+- init_crowdstrike_multiple_cid_with_tags.yml
+- crowdstrike_stackset_role_setup.yml
+    
+3b. Upload the following files to the root of an S3 Bucket if you do NOT want to use tagging.
 - init_lambda_function.zip 
 - new_accounts_lambda_function.zip
+- update_stacksets_lambda_functions.zip
 - init_crowdstrike_multiple_cid.yml
-- crowdstrike_stackset_role_setup
+- crowdstrike_stackset_role_setup.yml
 - crowdstrike_aws_cspm.json (located in root of this repo)
 - crowdstrike_aws_gov_cspm.json (located in root of this repo)
 4. In the CloudFormation console select create stack.
-5. Choose Specify Template and upload init_crowdstrike_multiple_cid.yml
+5. Choose Specify Template and upload init_crowdstrike_multiple_cid_with_tags.yml or init_crowdstrike_multiple_cid.yml (for no tags)
 6. Fill out the parameters, click next.
 7. Optional: change Stack Failure Options to Preserve successfully provisioned resources. This option will allow you to maintain the stack and update parameters in the event of a mistake.
 7. Enabled the capabilities in the blue box and click submit.
@@ -55,6 +69,7 @@ This template provides parameters to create two AWS Secrets Manager Secrets, eac
 This section provides the parameters necessary to configure your CSPM Registration.
 | Parameter | Description | Options |
 |---|---|---|
+|CSPMTemplateURL| S3 URL for CSPM Onboarding Template (Commercial Only)||
 |EnableIOA| Whether to enable IOAs| true, false |
 |UseExistingCloudTrail| Select False ONLY if you wish to create a new cloudtrail for Read-Only IOAs (this is not common) | true, false |
 |EnableSensorManagement| Whether to enable 1Click | true, false|
@@ -113,6 +128,13 @@ This will update the stack within the target account to deploy 1Click resources.
 This will ensure all future account registrations will apply the stacksets with ```EnableSensorManagement``` set to ```true`` which will ensure the target account is onboarded with 1Click Resources.
 
 The above steps are the same if you are instead **Disabling** 1Click after having deployed this solution with 1Click **Enabled**.  For each relevant step, instead change the value from ```True``` to ```False```.
+
+### Apply Latest CSPM Template
+On occasion CrowdStrike will add new permissions requirements for the IAM role used for CSPM to ensure the latest AWS services are protected.  To update your existing IAM Roles complete the following steps: 
+
+1. Navigate to Lambda and open the crowdstrike-cloud-update-stacksets function.
+2. Create and save an empty test event. eg. {}
+3. Click test.
 
 ### Troubleshooting
 If an account either does not appear in Falcon or shows as inactive more than an hour after registration, review the logs for each Lambda function in cloudwatch logs and review the StackSet for that account to ensure no errors occured during stack deployment.

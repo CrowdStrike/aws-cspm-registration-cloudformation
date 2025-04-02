@@ -49,6 +49,7 @@ REGIONS = os.environ['regions']
 SECRET = os.environ['secret']
 ACCOUNTS = os.environ['accounts']
 CSPM_TEMPLATE_URL = os.environ['cspm_template_url']
+PARENT_STACK = os.environ['parent_stack']
 
 def get_secret(secret_name, secret_region):
     """Retrieve Falcon API Credentials from Secrets Manager"""
@@ -119,6 +120,9 @@ def add_stack_instance(account,
         service_name='cloudformation',
         region_name=AWS_REGION
     )
+
+    response = client.describe_stacks(StackName=PARENT_STACK)
+    stack_tags = response['Stacks'][0]['Tags']
 
     client.create_stack_set(
         StackSetName=f'CrowdStrike-Cloud-Security-Stackset-{account}',
@@ -191,6 +195,7 @@ def add_stack_instance(account,
         ExecutionRoleName=STACKSET_EXEC_ROLE,
         PermissionModel='SELF_MANAGED',
         CallAs='SELF',
+        Tags=stack_tags
     )
 
     client.create_stack_instances(

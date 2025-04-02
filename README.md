@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> This repo is being deprecated!  
+> Please see the Falcon Console for the latest Cloudformation Templates for AWS CSPM Onboarding.  
+> This repo may still be used for Multiple CID scenarios.  
+
 ![](https://raw.githubusercontent.com/CrowdStrike/falconpy/main/docs/asset/cs-logo.png)
 
 ## CrowdStrike AWS Registration with CloudFormation
