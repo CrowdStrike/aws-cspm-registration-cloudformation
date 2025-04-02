@@ -1,0 +1,539 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CrowdStrike Cloud-Security (CSPM) Registration Template for registration to multiple Falcon CIDs
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: 
+          default: Multi-CID Configuration
+        Parameters:
+          - CIDA
+          - OUA
+          - FalconClientIdA
+          - FalconSecretA
+          - FalconCloudA
+          - CIDB
+          - OUB
+          - FalconClientIdB
+          - FalconSecretB
+          - FalconCloudB
+      - Label: 
+          default: CSPM Configuration
+        Parameters:
+          - CSPMTemplateURL
+          - EnableIOA
+          - UseExistingCloudTrail
+          - EnableSensorManagement
+          - APICredentialsStorageMode
+          - Regions
+      - Label: 
+          default: Misc
+        Parameters:
+          - S3Bucket
+          - AWSAccountType
+          - RootOU
+          - StackSetAdminRole
+          - StackSetExecRole
+      - Label: 
+          default: Tags
+        Parameters:
+          - Key1
+          - Value1
+          - Key2
+          - Value2
+          - Key3
+          - Value3
+
+Parameters:
+  StackSetAdminRole:
+    Description: Administration Role for CrowdStrike Root EB StackSet
+    Type: String
+    Default: 'CrowdStrikeStackSetAdministrationRole'
+  StackSetExecRole:
+    Description: Execution Role for CrowdStrike Root EB StackSet
+    Type: String
+    Default: 'CrowdStrikeStackSetExecutionRole'
+  OUA:
+    Description: List of OUs for FalconClientIdA & FalconSecretA.
+    Type: String
+    Default: ''
+  CIDA:
+    Description: Falcon CID for OUA, FalconClientIdA & FalconSecretA.
+    Type: String
+    Default: ''
+  FalconClientIdA:
+    Description: Your CrowdStrike Falcon OAuth2 Client ID for OUA.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  FalconSecretA:
+    Description: Your CrowdStrike Falcon OAuth2 API Secret for OUA.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  FalconCloudA:
+    Description: Your CrowdStrike Falcon Cloud for OUA.
+    Type: String
+    Default: 'us1'
+    AllowedValues:
+      - 'us1'
+      - 'us2'
+      - 'eu1'
+      - 'usgov1'
+      - 'usgov2'
+  OUB:
+    Description: List of OUs for FalconClientIdB & FalconSecretB.
+    Type: String
+    Default: ''
+  CIDB:
+    Description: Falcon CID for OUB, FalconClientIdB & FalconSecretB.
+    Type: String
+    Default: ''
+  FalconClientIdB:
+    Description: Your CrowdStrike Falcon OAuth2 Client ID for OUB.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  FalconSecretB:
+    Description: Your CrowdStrike Falcon OAuth2 API Secret for OUB.
+    NoEcho: 'true'
+    Type: String
+    Default: ''
+  FalconCloudB:
+    Description: Your CrowdStrike Falcon Cloud for OUB.
+    Type: String
+    Default: 'us1'
+    AllowedValues:
+      - 'us1'
+      - 'us2'
+      - 'eu1'
+      - 'usgov1'
+      - 'usgov2'
+  UseExistingCloudTrail:
+    Type: String
+    Description: Choose False to Create CloudTrail for Read-Only Indicators of Attack.
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
+  EnableIOA:
+    Type: String
+    Description: Choose True to enable Indicators of Attack.
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
+  EnableSensorManagement:
+    Type: String
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'False'
+  S3Bucket:
+    Type: String
+    Default: ''
+  AWSAccountType:
+    Type: String
+    AllowedValues:
+      - 'commercial'
+      - 'govcloud'
+    Default: 'commercial'
+  APICredentialsStorageMode:
+    Type: String
+    Description: How Falcon API credentials are stored. 'lambda' stores them in the lambda environment variables, 'secret' in an AWS secret
+    Default: secret
+    AllowedValues: ["lambda", "secret"]
+  RootOU:
+    Type: String
+    Description: Please enter the Root OU (eg. r-****) to provision StackSet Roles against each account.
+    Default: ''
+  Regions:
+    Type: String
+    Description: List of regions to enable IOA (No Spaces).
+    Default: ''
+  CSPMTemplateURL:
+    Type: String
+    Description: S3 URL for CSPM Onboarding Template (Commercial Only)
+    Default: 'https://cs-prod-cloudconnect-templates.s3-us-west-1.amazonaws.com/aws_cspm_cloudformation_lambda_v2.json'
+  Key1:
+    Type: String
+    Description: Tag Key to apply to StackSets
+    Default: ''
+  Key2:
+    Type: String
+    Description: Tag Key to apply to StackSets
+    Default: ''
+  Key3:
+    Type: String
+    Description: Tag Key to apply to StackSets
+    Default: ''
+  Value1:
+    Type: String
+    Description: Tag value to apply to StackSets
+    Default: ''
+  Value2:
+    Type: String
+    Description: Tag value to apply to StackSets
+    Default: ''
+  Value3:
+    Type: String
+    Description: Tag value to apply to StackSets
+    Default: ''
+
+Resources:
+  # IAM Role to allow StackSet Administration
+  StackSetAdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref StackSetAdminRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::*:role/${StackSetExecRole}
+                Effect: Allow
+  # IAM Role to allow StackSet Execution
+  StackSetExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: StackSetAdministrationRole
+    Properties:
+      RoleName: !Ref StackSetExecRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            AWS: !GetAtt StackSetAdministrationRole.Arn
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - events:DeleteRule
+                - events:PutTargets
+                - events:DescribeRule
+                - iam:PassRole
+                - events:EnableRule
+                - events:PutRule
+                - events:RemoveTargets
+                - events:DisableRule
+                Resource:
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/cs-*
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/*/cs-*
+                - !Sub arn:${AWS::Partition}:iam::*:role/CrowdStrike*
+                Effect: Allow
+              - Action: cloudformation:*
+                Resource: '*'
+                Effect: Allow
+              - Action: secretsmanager:*
+                Resource: !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/CrowdStrike/CSPM/SensorManagement/FalconAPICredentials-*'
+                Effect: Allow
+              - Action:
+                - iam:GetRole
+                - iam:CreateRole
+                - iam:DeleteRole
+                - iam:CreatePolicy
+                - iam:DeletePolicy
+                - iam:PutRolePolicy
+                - iam:DeleteRolePolicy
+                - iam:AttachRolePolicy
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                - lambda:CreateFunction
+                - lambda:DeleteFunction
+                - lambda:CreateAlias
+                - lambda:DeleteAlias
+                - lambda:AddPermission
+                - lambda:RemovePermission
+                - lambda:InvokeFunction
+                - lambda:GetFunction
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                - logs:CreateLogGroup
+                - logs:DeleteLogGroup
+                - logs:PutRetentionPolicy
+                - logs:DeleteRetentionPolicy
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                - s3:GetObject
+                - s3:DeleteObject
+                - s3:PutObject
+                - s3:CreateBucket
+                - s3:DeleteBucket
+                - s3:PutBucketPolicy
+                - s3:DeleteBucketPolicy
+                Resource: '*'
+                Effect: Allow
+
+  # StackSet to create roles for stackset execution
+  StackSetRoleSetup:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      AutoDeployment: 
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      Capabilities: 
+        - CAPABILITY_NAMED_IAM
+      Description: Create roles to allow CrowdStrike StackSet Execution
+      OperationPreferences: 
+        FailureTolerancePercentage: 100
+        MaxConcurrentPercentage: 100
+      Parameters:
+        - ParameterKey: StackSetExecRole
+          ParameterValue: !Ref StackSetExecRole
+        - ParameterKey: StackSetAdminRole
+          ParameterValue: !GetAtt StackSetAdministrationRole.Arn
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup: 
+        - DeploymentTargets:
+            AccountFilterType: NONE
+            OrganizationalUnitIds: 
+              - !Ref RootOU
+          Regions:
+            - !Ref AWS::Region
+      StackSetName: crowdstrike-stackset-role-setup
+      TemplateURL: !Sub https://${S3Bucket}.s3.amazonaws.com/crowdstrike_stackset_role_setup.yml
+
+  # IAM Role for Lambda Function Execution
+  LambdaCrowdStrikeRegistrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: { }
+      Path: /
+      Policies:
+        - PolicyName: CrowdStrikeApiSecretPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:*:*:secret:CrowdStrikeAPISecret-*'
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeRegions'
+                Resource: '*'
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - iam:PassRole
+                - cloudformation:CreateStackInstances
+                - cloudformation:CreateStackSet
+                Resource:
+                - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security*
+                - !GetAtt StackSetAdministrationRole.Arn
+                Effect: Allow
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ReadOnlyAccess'
+
+  # Lambda Function to register and onboard existing accounts
+  RegisterExistingAccountsLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - CrowdStrikeSecretA
+      - CrowdStrikeSecretB
+      - StackSetRoleSetup
+    Properties:
+      Environment:
+        Variables:
+          existing_cloudtrail: !Ref UseExistingCloudTrail
+          sensor_management: !Ref EnableSensorManagement
+          credentials_storage: !Ref APICredentialsStorageMode
+          aws_account_type: !Ref AWSAccountType
+          current_region: !Ref AWS::Region
+          admin_role: !GetAtt StackSetAdministrationRole.Arn
+          exec_role: !Ref StackSetExecRole
+          enable_ioa: !Ref EnableIOA
+          s3_bucket: !Ref S3Bucket
+          regions: !Ref Regions
+          accounts: 'auto'
+          secret: 'auto'
+          secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
+          cspm_template_url: !Ref CSPMTemplateURL
+          Key1: !Ref Key1
+          Key2: !Ref Key2
+          Key3: !Ref Key3
+          Value1: !Ref Value1
+          Value2: !Ref Value2
+          Value3: !Ref Value3
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
+      Runtime: python3.11
+      Timeout: 900
+      FunctionName: crowdstrike-cloud-initial-registration
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: init_lambda_function_tags.zip
+  
+  RegisterNewAccountsLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - CrowdStrikeSecretA
+      - CrowdStrikeSecretB
+      - StackSetRoleSetup
+    Properties:
+      Environment:
+        Variables:
+          existing_cloudtrail: !Ref UseExistingCloudTrail
+          sensor_management: !Ref EnableSensorManagement
+          credentials_storage: !Ref APICredentialsStorageMode
+          aws_account_type: !Ref AWSAccountType
+          current_region: !Ref AWS::Region
+          admin_role: !GetAtt StackSetAdministrationRole.Arn
+          exec_role: !Ref StackSetExecRole
+          enable_ioa: !Ref EnableIOA
+          s3_bucket: !Ref S3Bucket
+          regions: !Ref Regions
+          secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
+          cspm_template_url: !Ref CSPMTemplateURL
+          Key1: !Ref Key1
+          Key2: !Ref Key2
+          Key3: !Ref Key3
+          Value1: !Ref Value1
+          Value2: !Ref Value2
+          Value3: !Ref Value3
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
+      Runtime: python3.11
+      Timeout: 900
+      FunctionName: crowdstrike-cloud-new-registration
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: new_accounts_lambda_function_tags.zip
+
+  UpdateStackSetsLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - StackSetRoleSetup
+    Properties:
+      Environment:
+        Variables:
+          cspm_template_url: !Ref CSPMTemplateURL
+          admin_role_arn: !GetAtt StackSetAdministrationRole.Arn
+          exec_role_arn: !Ref StackSetExecRole
+          Key1: !Ref Key1
+          Key2: !Ref Key2
+          Key3: !Ref Key3
+          Value1: !Ref Value1
+          Value2: !Ref Value2
+          Value3: !Ref Value3
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
+      Runtime: python3.11
+      Timeout: 900
+      FunctionName: crowdstrike-cloud-update-stacksets
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: update_stacksets_lambda_function_tags.zip
+
+  # Trigger Lambda Function
+  # TriggerRegisterExistingAccountsLambda:
+  #   Type: 'Custom::TriggerLambda'
+  #   DependsOn:
+  #     - RegisterExistingAccountsLambda
+  #   Properties:
+  #     ServiceToken: !GetAtt
+  #       - RegisterExistingAccountsLambda
+  #       - Arn
+
+  # Create Secrets for registration lambda
+  CrowdStrikeSecretA:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: CrowdStrike Credentials
+      Name: CrowdStrikeAPISecret-A
+      SecretString:
+        Fn::Join:
+          - ''
+          - - '{"FalconClientId":"'
+            - Ref: "FalconClientIdA"
+            - '","FalconSecret": "'
+            - Ref: FalconSecretA
+            - '","FalconCloud": "'
+            - Ref: FalconCloudA
+            - '","OUs": "'
+            - Ref: OUA
+            - '","CID": "'
+            - Ref: CIDA
+            - '"}'
+  CrowdStrikeSecretB:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: CrowdStrike Credentials
+      Name: CrowdStrikeAPISecret-B
+      SecretString:
+        Fn::Join:
+          - ''
+          - - '{"FalconClientId":"'
+            - Ref: "FalconClientIdB"
+            - '","FalconSecret": "'
+            - Ref: FalconSecretB
+            - '","FalconCloud": "'
+            - Ref: FalconCloudB
+            - '","OUs": "'
+            - Ref: OUB
+            - '","CID": "'
+            - Ref: CIDB
+            - '"}'
+
+  # Auto register
+  CreateAccountRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger lambda when accounts are created.
+      EventPattern:
+        source:
+          - "aws.organizations"
+        detail-type:
+          - "AWS API Call via CloudTrail"
+        detail:
+          eventSource:
+            - "organizations.amazonaws.com"
+          eventName:
+            - "MoveAccount"
+      Name: cs-multi-cid-trigger
+      State: ENABLED
+      Targets: 
+        - Id: trigger-multi-cid-lambda
+          Arn: !GetAtt RegisterNewAccountsLambda.Arn
+
+  InvokeLambdaPermission: 
+    Type: AWS::Lambda::Permission
+    DependsOn: RegisterNewAccountsLambda
+    Properties: 
+      FunctionName: !Ref RegisterNewAccountsLambda
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt CreateAccountRule.Arn
