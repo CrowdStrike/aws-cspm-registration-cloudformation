@@ -387,6 +387,26 @@ Resources:
         S3Bucket: !Ref S3Bucket
         S3Key: new_accounts_lambda_function.zip
 
+  UpdateStackSetsLambda:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - StackSetRoleSetup
+    Properties:
+      Environment:
+        Variables:
+          cspm_template_url: !Ref CSPMTemplateURL
+          admin_role_arn: !GetAtt StackSetAdministrationRole.Arn
+          exec_role_arn: !Ref StackSetExecRole
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
+      Runtime: python3.11
+      Timeout: 900
+      FunctionName: crowdstrike-cloud-update-stacksets
+      Code:
+        S3Bucket: !Ref S3Bucket
+        S3Key: update_stacksets_lambda_function.zip
+
   # Trigger Lambda Function
   # TriggerRegisterExistingAccountsLambda:
   #   Type: 'Custom::TriggerLambda'
