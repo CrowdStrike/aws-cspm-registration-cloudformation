@@ -326,6 +326,7 @@ Resources:
                 - iam:PassRole
                 - cloudformation:CreateStackInstances
                 - cloudformation:CreateStackSet
+                - cloudformation:TagResource
                 Resource:
                 - !Sub arn:${AWS::Partition}:cloudformation:*:*:stackset/CrowdStrike-Cloud-Security*
                 - !GetAtt StackSetAdministrationRole.Arn
