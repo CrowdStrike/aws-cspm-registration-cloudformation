@@ -34,15 +34,6 @@ Metadata:
           - RootOU
           - StackSetAdminRole
           - StackSetExecRole
-      - Label: 
-          default: Tags
-        Parameters:
-          - Key1
-          - Value1
-          - Key2
-          - Value2
-          - Key3
-          - Value3
 
 Parameters:
   StackSetAdminRole:
@@ -155,30 +146,6 @@ Parameters:
     Type: String
     Description: S3 URL for CSPM Onboarding Template (Commercial Only)
     Default: 'https://cs-prod-cloudconnect-templates.s3-us-west-1.amazonaws.com/aws_cspm_cloudformation_lambda_v2.json'
-  Key1:
-    Type: String
-    Description: Tag Key to apply to StackSets
-    Default: ''
-  Key2:
-    Type: String
-    Description: Tag Key to apply to StackSets
-    Default: ''
-  Key3:
-    Type: String
-    Description: Tag Key to apply to StackSets
-    Default: ''
-  Value1:
-    Type: String
-    Description: Tag value to apply to StackSets
-    Default: ''
-  Value2:
-    Type: String
-    Description: Tag value to apply to StackSets
-    Default: ''
-  Value3:
-    Type: String
-    Description: Tag value to apply to StackSets
-    Default: ''
 
 Resources:
   # IAM Role to allow StackSet Administration
@@ -250,6 +217,10 @@ Resources:
                 - iam:PutRolePolicy
                 - iam:DeleteRolePolicy
                 - iam:AttachRolePolicy
+                - iam:UntagPolicy
+                - iam:UntagRole
+                - iam:TagRole
+                - iam:TagPolicy
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -261,6 +232,8 @@ Resources:
                 - lambda:RemovePermission
                 - lambda:InvokeFunction
                 - lambda:GetFunction
+                - lambda:TagResource
+                - lambda:UntagResource
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -268,6 +241,10 @@ Resources:
                 - logs:DeleteLogGroup
                 - logs:PutRetentionPolicy
                 - logs:DeleteRetentionPolicy
+                - logs:TagResource
+                - logs:TagLogGroup
+                - logs:UntagLogGroup
+                - logs:UntagResource
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -278,6 +255,10 @@ Resources:
                 - s3:DeleteBucket
                 - s3:PutBucketPolicy
                 - s3:DeleteBucketPolicy
+                - s3:PutObjectTagging
+                - s3:PutBucketTagging
+                - s3:TagResource
+                - s3:UntagResource
                 Resource: '*'
                 Effect: Allow
 
@@ -354,6 +335,7 @@ Resources:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSOrganizationsReadOnlyAccess'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonS3ReadOnlyAccess'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ReadOnlyAccess'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationReadOnlyAccess'
 
   # Lambda Function to register and onboard existing accounts
   RegisterExistingAccountsLambda:
@@ -379,12 +361,7 @@ Resources:
           secret: 'auto'
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
           cspm_template_url: !Ref CSPMTemplateURL
-          Key1: !Ref Key1
-          Key2: !Ref Key2
-          Key3: !Ref Key3
-          Value1: !Ref Value1
-          Value2: !Ref Value2
-          Value3: !Ref Value3
+          parent_stack: !Ref AWS::StackName
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -416,12 +393,7 @@ Resources:
           regions: !Ref Regions
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
           cspm_template_url: !Ref CSPMTemplateURL
-          Key1: !Ref Key1
-          Key2: !Ref Key2
-          Key3: !Ref Key3
-          Value1: !Ref Value1
-          Value2: !Ref Value2
-          Value3: !Ref Value3
+          parent_stack: !Ref AWS::StackName
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -442,12 +414,7 @@ Resources:
           cspm_template_url: !Ref CSPMTemplateURL
           admin_role_arn: !GetAtt StackSetAdministrationRole.Arn
           exec_role_arn: !Ref StackSetExecRole
-          Key1: !Ref Key1
-          Key2: !Ref Key2
-          Key3: !Ref Key3
-          Value1: !Ref Value1
-          Value2: !Ref Value2
-          Value3: !Ref Value3
+          parent_stack: !Ref AWS::StackName
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"

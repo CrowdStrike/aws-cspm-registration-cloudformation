@@ -11,12 +11,7 @@ logger.setLevel(logging.INFO)
 CSPM_TEMPLATE_URL = os.environ['cspm_template_url']
 ADMIN_ROLE_ARN = os.environ['admin_role_arn']
 EXEC_ROLE_NAME = os.environ['exec_role_arn']
-KEY_1 = os.environ['key1']
-KEY_2 = os.environ['key2']
-KEY_3 = os.environ['key3']
-VALUE_1 = os.environ['value1']
-VALUE_2 = os.environ['value2']
-VALUE_3 = os.environ['value3']
+PARENT_STACK = os.environ['parent_stack']
 
 def get_stacksets():
     try:
@@ -45,6 +40,9 @@ def get_stacksets():
 def update_stacksets(stackset_name):
     try:
         client = boto3.client('cloudformation')
+        tag_response = client.describe_stacks(StackName=PARENT_STACK)
+        stack_tags = tag_response['Stacks'][0]['Tags']
+
         response = client.update_stack_set(
             StackSetName=stackset_name,
             TemplateURL=CSPM_TEMPLATE_URL,
@@ -127,20 +125,7 @@ def update_stacksets(stackset_name):
                     'UsePreviousValue': True
                 }
             ],
-            Tags=[
-                {
-                    'Key': KEY_1,
-                    'Value': VALUE_1
-                },
-                {
-                    'Key': KEY_2,
-                    'Value': VALUE_2
-                },
-                {
-                    'Key': KEY_3,
-                    'Value': VALUE_3
-                }
-            ],
+            Tags=stack_tags
         )
         print(response)
     except ClientError as error:
