@@ -20,6 +20,7 @@ Metadata:
       - Label: 
           default: CSPM Configuration
         Parameters:
+          - CSPMTemplateURL
           - EnableIOA
           - UseExistingCloudTrail
           - EnableSensorManagement
@@ -141,6 +142,10 @@ Parameters:
     Type: String
     Description: List of regions to enable IOA (No Spaces).
     Default: ''
+  CSPMTemplateURL:
+    Type: String
+    Description: S3 URL for CSPM Onboarding Template (Commercial Only)
+    Default: 'https://cs-prod-cloudconnect-templates.s3-us-west-1.amazonaws.com/aws_cspm_cloudformation_lambda_v2.json'
 
 Resources:
   # IAM Role to allow StackSet Administration
@@ -340,6 +345,7 @@ Resources:
           accounts: 'auto'
           secret: 'auto'
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
+          cspm_template_url: !Ref CSPMTemplateURL
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -370,6 +376,7 @@ Resources:
           s3_bucket: !Ref S3Bucket
           regions: !Ref Regions
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
+          cspm_template_url: !Ref CSPMTemplateURL
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
