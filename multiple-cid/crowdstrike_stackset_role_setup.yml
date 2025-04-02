@@ -59,8 +59,11 @@ Resources:
                 - iam:DeletePolicy
                 - iam:PutRolePolicy
                 - iam:DeleteRolePolicy
-                - iam:DetachRolePolicy
                 - iam:AttachRolePolicy
+                - iam:UntagPolicy
+                - iam:UntagRole
+                - iam:TagRole
+                - iam:TagPolicy
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -72,6 +75,8 @@ Resources:
                 - lambda:RemovePermission
                 - lambda:InvokeFunction
                 - lambda:GetFunction
+                - lambda:TagResource
+                - lambda:UntagResource
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -79,6 +84,10 @@ Resources:
                 - logs:DeleteLogGroup
                 - logs:PutRetentionPolicy
                 - logs:DeleteRetentionPolicy
+                - logs:TagResource
+                - logs:TagLogGroup
+                - logs:UntagLogGroup
+                - logs:UntagResource
                 Resource: '*'
                 Effect: Allow
               - Action:
@@ -89,5 +98,9 @@ Resources:
                 - s3:DeleteBucket
                 - s3:PutBucketPolicy
                 - s3:DeleteBucketPolicy
+                - s3:PutObjectTagging
+                - s3:PutBucketTagging
+                - s3:TagResource
+                - s3:UntagResource
                 Resource: '*'
                 Effect: Allow
