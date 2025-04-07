@@ -59,6 +59,7 @@ Resources:
                 - iam:DeletePolicy
                 - iam:PutRolePolicy
                 - iam:DeleteRolePolicy
+                - iam:DetachRolePolicy
                 - iam:AttachRolePolicy
                 - iam:UntagPolicy
                 - iam:UntagRole
