@@ -21,7 +21,7 @@ subprocess.call('pip install crowdstrike-falconpy -r /tmp/requirements.txt -t /t
                 stderr=subprocess.DEVNULL
                )
 sys.path.insert(1, '/tmp/')
-from falconpy import CSPMRegistration
+from falconpy import CSPMRegistration, CloudAWSRegistration
 import requests
 
 logger = logging.getLogger()
@@ -31,7 +31,7 @@ logger.setLevel(logging.INFO)
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
 
-VERSION = "1.1.0"
+VERSION = "2.0.0"
 NAME = "crowdstrike-cloud-reg-multi-cid"
 USER_AGENT = ("%s/%s" % (NAME, VERSION))
 
@@ -48,6 +48,7 @@ S3_BUCKET = os.environ['s3_bucket']
 REGIONS = os.environ['regions']
 CSPM_TEMPLATE_URL = os.environ['cspm_template_url']
 PARENT_STACK = os.environ['parent_stack']
+IDENTITY_PROTECTION = eval(os.environ['identity_protection'])
 
 def get_secret(secret_name, secret_region):
     """Retrieve Falcon API Credentials from Secrets Manager"""
@@ -685,6 +686,25 @@ def get_active_regions():
     except ClientError as error:
         raise error
 
+def register_features(falcon_client_id, falcon_secret, aws_account_id):
+    """Function to register account with Cloud features"""
+    falcon_cloud = CloudAWSRegistration(client_id=falcon_client_id,
+                                        client_secret=falcon_secret,
+                                        user_agent=USER_AGENT
+                                       )
+    cloud_response = falcon_cloud.create_account(account_id=aws_account_id,
+                                        user_agent=USER_AGENT,
+                                        is_master=True,
+                                        account_type=AWS_ACCOUNT_TYPE,
+                                        products=[
+                                                    {
+                                                        "features":["default"],
+                                                        "product": "idp"
+                                                    }
+                                                ]
+                                        )
+    logger.info('Feature Registration Response: %s' % cloud_response)
+
 def lambda_handler(event, context):
     """Main Function"""
     logger.info('Got event %s', event)
@@ -717,6 +737,8 @@ def lambda_handler(event, context):
                             logger.info('Account %s Registration Failed with reason... %s', account, error)
                         elif response['status_code'] == 201:
                             logger.info('Account %s Registration Succeeded', account)
+                            if IDENTITY_PROTECTION:
+                                register_features(falcon_client_id, falcon_secret, account)
                             cs_account = response['body']['resources'][0]['intermediate_role_arn'].rsplit('::')[1]
                             cs_account_id = cs_account.rsplit(':')[0]
                             iam_role_name = response['body']['resources'][0]['iam_role_arn'].rsplit('/')[1]

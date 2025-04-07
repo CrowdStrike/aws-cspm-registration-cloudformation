@@ -22,6 +22,7 @@ Metadata:
         Parameters:
           - CSPMTemplateURL
           - EnableIOA
+          - EnableIDP
           - UseExistingCloudTrail
           - EnableSensorManagement
           - APICredentialsStorageMode
@@ -103,6 +104,13 @@ Parameters:
   UseExistingCloudTrail:
     Type: String
     Description: Choose False to Create CloudTrail for Read-Only Indicators of Attack.
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'True'
+  EnableIDP:
+    Type: String
+    Description: Enable Identity Protection.
     AllowedValues:
       - 'True'
       - 'False'
@@ -216,6 +224,7 @@ Resources:
                 - iam:DeletePolicy
                 - iam:PutRolePolicy
                 - iam:DeleteRolePolicy
+                - iam:DetachRolePolicy
                 - iam:AttachRolePolicy
                 - iam:UntagPolicy
                 - iam:UntagRole
@@ -363,6 +372,7 @@ Resources:
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
           cspm_template_url: !Ref CSPMTemplateURL
           parent_stack: !Ref AWS::StackName
+          identity_protection: !Ref EnableIDP
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -395,6 +405,7 @@ Resources:
           secret_list: !Join [ ",", [ !Ref CrowdStrikeSecretA, !Ref CrowdStrikeSecretB ] ]
           cspm_template_url: !Ref CSPMTemplateURL
           parent_stack: !Ref AWS::StackName
+          identity_protection: !Ref EnableIDP
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
