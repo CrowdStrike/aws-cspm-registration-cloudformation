@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> This repo is being deprecated!  
+> For multi-CID registration please see https://github.com/CrowdStrike/aws-cspm-registration-multi-cid
+
 ![](https://raw.githubusercontent.com/CrowdStrike/falconpy/main/docs/asset/cs-logo.png)
 
 ## CrowdStrike AWS Registration with Multiple Falcon CIDs
