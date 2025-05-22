@@ -9,6 +9,13 @@
 
 This repository provides CloudFormation templates to onboard AWS Organizations with CrowdStrike Cloud Security.
 
+## Purpose
+This repository contains CloudFormation as an alternative to the standard CrowdStrike Falcon Cloud Security onboarding methods.  This can be useful if your organization has the following requirements:
+- Unable to run the Bash Script provided by Falcon Cloud Security
+- Require the ability to apply tags across all resources
+- Require the ability to apply a permissions boundary to all IAM Roles
+- Plan to register AWS Accounts within the same Organziation to multiple Falcon CIDs
+
 ## Prerequisites
 
 ### Create Falcon API Client and Secret
